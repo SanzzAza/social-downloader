@@ -2,26 +2,8 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/**/*.js",
+      "src": "api/index.js",
       "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/download",
-      "dest": "/api/index.js"
-    },
-    {
-      "src": "/api/health",
-      "dest": "/api/index.js"
-    },
-    {
-      "src": "/api/platforms",
-      "dest": "/api/index.js"
-    },
-    {
-      "src": "/api",
-      "dest": "/api/index.js"
     }
   ]
 }
