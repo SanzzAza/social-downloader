@@ -1,28 +1,21 @@
-/* Variables */
-:root {
-  --primary: #FF6B35;
-  --secondary: #1A1A2E;
-  --accent: #16C79A;
-  --background: #F7F7F7;
-  --surface: #FFFFFF;
-  --text: #1A1A2E;
-  --border: 3px solid #1A1A2E;
-  --shadow: 6px 6px 0 #1A1A2E;
-}
-
 /* Container */
 .container {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--background);
+  background: #F7F7F7;
   font-family: 'IBM Plex Sans', sans-serif;
+  --primary: #FF6B35;
+  --secondary: #1A1A2E;
+  --accent: #16C79A;
+  --background: #F7F7F7;
+  --surface: #FFFFFF;
 }
 
 /* Header */
 .header {
   background: var(--surface);
-  border-bottom: var(--border);
+  border-bottom: 3px solid var(--secondary);
   padding: 24px 32px;
   position: relative;
 }
@@ -42,8 +35,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: var(--border);
-  box-shadow: var(--shadow);
+  border: 3px solid var(--secondary);
+  box-shadow: 6px 6px 0 var(--secondary);
 }
 
 .logo h1 {
@@ -51,6 +44,7 @@
   font-size: clamp(24px, 4vw, 40px);
   font-weight: 700;
   margin: 0;
+  color: var(--secondary);
 }
 
 .tagline {
@@ -73,7 +67,7 @@
   width: 24px;
   height: 24px;
   background: var(--primary);
-  border: var(--border);
+  border: 3px solid var(--secondary);
   box-shadow: 4px 4px 0 var(--secondary);
 }
 
@@ -104,6 +98,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
+  color: var(--secondary);
 }
 
 .titleNumber {
@@ -111,15 +106,15 @@
   color: var(--surface);
   padding: 4px 12px;
   font-size: 18px;
-  border: var(--border);
+  border: 3px solid var(--secondary);
   box-shadow: 4px 4px 0 var(--secondary);
 }
 
 /* Endpoint Card */
 .endpointCard {
   background: var(--surface);
-  border: var(--border);
-  box-shadow: var(--shadow);
+  border: 3px solid var(--secondary);
+  box-shadow: 6px 6px 0 var(--secondary);
   padding: 24px;
   margin-bottom: 24px;
 }
@@ -148,11 +143,20 @@
   background: var(--background);
   padding: 6px 12px;
   border: 2px solid var(--secondary);
+  color: var(--secondary);
 }
 
 .endpointCard p {
   color: #4A4A68;
   margin-bottom: 16px;
+}
+
+.docsSection h3 {
+  font-family: 'Space Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 24px 0 16px;
+  color: var(--secondary);
 }
 
 /* Code Block */
@@ -163,8 +167,9 @@
   font-family: 'JetBrains Mono', monospace;
   font-size: 13px;
   overflow-x: auto;
-  border: var(--border);
+  border: 3px solid var(--secondary);
   white-space: pre;
+  margin-top: 16px;
 }
 
 /* Platform Grid */
@@ -178,7 +183,7 @@
 .platformItem {
   padding: 12px 16px;
   background: var(--surface);
-  border: var(--border);
+  border: 3px solid var(--secondary);
   box-shadow: 4px 4px 0 var(--secondary);
   font-weight: 600;
   font-size: 14px;
@@ -187,8 +192,8 @@
 /* Tester Card */
 .testerCard {
   background: var(--surface);
-  border: var(--border);
-  box-shadow: var(--shadow);
+  border: 3px solid var(--secondary);
+  box-shadow: 6px 6px 0 var(--secondary);
   padding: 32px;
   margin-bottom: 24px;
 }
@@ -204,6 +209,7 @@
   font-weight: 700;
   text-transform: uppercase;
   margin-bottom: 8px;
+  color: var(--secondary);
 }
 
 .formGroup input,
@@ -211,10 +217,11 @@
   width: 100%;
   padding: 16px;
   font-size: 16px;
-  border: var(--border);
+  border: 3px solid var(--secondary);
   background: var(--background);
   font-family: inherit;
   outline: none;
+  color: var(--secondary);
 }
 
 .formGroup input:focus,
@@ -228,8 +235,8 @@
   padding: 20px 32px;
   background: var(--primary);
   color: white;
-  border: var(--border);
-  box-shadow: var(--shadow);
+  border: 3px solid var(--secondary);
+  box-shadow: 6px 6px 0 var(--secondary);
   font-family: 'Space Mono', monospace;
   font-size: 18px;
   font-weight: 700;
@@ -252,7 +259,7 @@
   box-shadow: 2px 2px 0 var(--secondary);
 }
 
-#detectedInfo {
+.detectedInfo {
   margin-top: 16px;
   padding: 12px 16px;
   background: var(--background);
@@ -261,7 +268,7 @@
   font-size: 14px;
 }
 
-#detectedPlatform {
+.detectedPlatform {
   color: var(--primary);
   font-weight: 600;
   text-transform: uppercase;
@@ -270,8 +277,8 @@
 /* Response Section */
 .responseSection {
   background: var(--surface);
-  border: var(--border);
-  box-shadow: var(--shadow);
+  border: 3px solid var(--secondary);
+  box-shadow: 6px 6px 0 var(--secondary);
   overflow: hidden;
 }
 
@@ -295,9 +302,10 @@
   cursor: pointer;
   font-size: 11px;
   font-family: 'JetBrains Mono', monospace;
+  color: var(--secondary);
 }
 
-#responseViewer {
+.responseViewer {
   background: #0D0D14;
   padding: 24px;
   margin: 0;

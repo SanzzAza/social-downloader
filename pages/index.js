@@ -93,8 +93,8 @@ export default function Home() {
               </button>
             </form>
 
-            <div id="detectedInfo" style={{display: 'none'}}>
-              Detected: <span id="detectedPlatform"></span>
+            <div className={styles.detectedInfo} id="detectedInfo" style={{display: 'none'}}>
+              Detected: <span className={styles.detectedPlatform} id="detectedPlatform"></span>
             </div>
           </div>
 
