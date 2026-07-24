@@ -58,167 +58,89 @@ function cleanTikTokUrl(url) {
 // ============================================
 // TIKTOK - Real Scraper with proper decoding
 // ============================================
+function parseEmbeddedJson(html, id) {
+  const re = new RegExp(`<script[^>]+id=["']${id}["'][^>]*>([\\s\\S]*?)</script>`, 'i');
+  const match = html.match(re);
+  if (!match) return null;
+  try { return JSON.parse(match[1]); } catch (_) { return null; }
+}
+
+function findTikTokItem(value) {
+  if (!value || typeof value !== 'object') return null;
+  if (value.itemInfo?.itemStruct) return value.itemInfo.itemStruct;
+  if (value.itemStruct?.video || value.itemStruct?.stats) return value.itemStruct;
+  for (const child of Object.values(value)) {
+    const found = findTikTokItem(child);
+    if (found) return found;
+  }
+  return null;
+}
+
+function decodeTikTokValue(value) {
+  if (!value) return '';
+  return String(value)
+    .replace(/&amp;/g, '&')
+    .replace(/\\u002F/g, '/')
+    .replace(/\\u0026/g, '&')
+    .replace(/\\u003D/g, '=')
+    .replace(/\\u0025/g, '%');
+}
+
 async function downloadTikTok(url) {
-  url = url.split('?')[0];
-  
   try {
     const response = await fetch(url, {
+      redirect: 'follow',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9'
       }
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`TikTok HTTP ${response.status}`);
 
     const html = await response.text();
     const $ = cheerio.load(html);
+    const universal = parseEmbeddedJson(html, '__UNIVERSAL_DATA_FOR_REHYDRATION__');
+    const sigi = parseEmbeddedJson(html, 'SIGI_STATE');
+    const item = findTikTokItem(universal) || findTikTokItem(sigi);
+    const video = item?.video || {};
+    const author = item?.author || {};
+    const stats = item?.stats || {};
 
-    // Get meta tags
-    const ogTitle = $('meta[property="og:title"]').attr('content');
-    const ogDescription = $('meta[property="og:description"]').attr('content');
-    const ogImage = $('meta[property="og:image"]').attr('content');
-    const ogUrl = $('meta[property="og:url"]').attr('content');
+    const ogTitle = $('meta[property="og:title"]').attr('content') || '';
+    const ogImage = $('meta[property="og:image"]').attr('content') || '';
+    const videoUrl = decodeTikTokValue(video.playAddr || video.downloadAddr);
+    const thumbnail = decodeTikTokValue(video.cover || video.originCover || ogImage);
 
-    // Extract video ID
-    const videoIdMatch = url.match(/\/video\/(\d+)/);
-    const videoId = videoIdMatch ? videoIdMatch[1] : generateId();
-
-    let videoUrl = null;
-    let noWatermarkUrl = null;
-    let duration = null;
-    let likes = 0;
-
-    // Parse JSON data from script tags
-    const scripts = $('script');
-    for (const script of scripts) {
-      const content = $(script).html();
-      if (!content) continue;
-      
-      // Look for RENDER_DATA or SIGI_STATE
-      if (content.includes('videoData') || content.includes('playAddr') || content.includes('downloadAddr')) {
-        
-        // Try to find all URLs
-        const urlMatches = content.match(/(https?:\/\/[^\s"\'\\]+(?:\.mp4|\.m3u8)[^\s"\'\\]*)/g);
-        
-        if (urlMatches) {
-          for (const match of urlMatches) {
-            const cleanedUrl = cleanTikTokUrl(match);
-            if (cleanedUrl && cleanedUrl.includes('.mp4')) {
-              if (!videoUrl) videoUrl = cleanedUrl;
-              else if (!noWatermarkUrl && !cleanedUrl.includes('watermark')) {
-                noWatermarkUrl = cleanedUrl;
-              }
-            }
-          }
-        }
-        
-        // Also try specific patterns
-        const playAddrMatch = content.match(/playAddr["\s:]+["']([^"']+)["']/);
-        const downloadAddrMatch = content.match(/downloadAddr["\s:]+["']([^"']+)["']/);
-        
-        if (playAddrMatch) {
-          const decoded = decodeURIComponent(playAddrMatch[1].replace(/\\u/g, '%u'));
-          const cleaned = cleanTikTokUrl(decoded);
-          if (cleaned) videoUrl = cleaned;
-        }
-        
-        if (downloadAddrMatch) {
-          const decoded = decodeURIComponent(downloadAddrMatch[1].replace(/\\u/g, '%u'));
-          const cleaned = cleanTikTokUrl(decoded);
-          if (cleaned) noWatermarkUrl = cleaned;
-        }
-        
-        // Try to find duration
-        const durationMatch = content.match(/"duration":(\d+)/);
-        if (durationMatch) duration = parseInt(durationMatch[1]);
-        
-        // Try to find likes
-        const likesMatch = content.match(/"diggCount":(\d+)/) || content.match(/"like_count":(\d+)/);
-        if (likesMatch) likes = parseInt(likesMatch[1]);
-      }
+    if (!item || !videoUrl.startsWith('http')) {
+      throw new Error('TikTok HTML tidak berisi data video yang bisa diputar');
     }
 
-    // Clean URLs
-    if (videoUrl) videoUrl = cleanTikTokUrl(videoUrl);
-    if (noWatermarkUrl) noWatermarkUrl = cleanTikTokUrl(noWatermarkUrl);
-
-    // Extract author name
-    const authorName = ogTitle?.split(' - ')[0]?.replace('@', '').trim() || 
-                       ogDescription?.split('\n')[0]?.trim() || 
-                       'TikTok User';
-    const authorId = ogTitle?.match(/@(\w+)/)?.[1] || 'user';
-
-    // If we found valid video URL
-    if (videoUrl && videoUrl.startsWith('http') && videoUrl.includes('.mp4')) {
-      return {
-        id: videoId,
-        title: ogTitle || ogDescription || 'TikTok Video',
-        author: {
-          name: authorName,
-          uniqueId: authorId,
-          avatar: ogImage || ''
-        },
-        thumbnail: ogImage || '',
-        media: [
-          {
-            type: 'video',
-            quality: '1080p',
-            url: videoUrl,
-            format: 'mp4',
-            watermark: false
-          }
-        ],
-        duration: duration,
-        statistics: {
-          likes: likes,
-          comments: 0,
-          shares: 0
-        },
-        downloadUrl: videoUrl,
-        source: 'tiktok_api'
-      };
-    }
-
-    // If only noWatermark URL
-    if (noWatermarkUrl && noWatermarkUrl.startsWith('http') && noWatermarkUrl.includes('.mp4')) {
-      return {
-        id: videoId,
-        title: ogTitle || 'TikTok Video',
-        author: { name: authorName, uniqueId: authorId, avatar: ogImage || '' },
-        thumbnail: ogImage || '',
-        media: [
-          { type: 'video', quality: '720p', url: noWatermarkUrl, format: 'mp4', watermark: false }
-        ],
-        duration: duration,
-        statistics: { likes: likes, comments: 0, shares: 0 },
-        downloadUrl: noWatermarkUrl,
-        source: 'tiktok_api'
-      };
-    }
-
-    throw new Error('No playable video found');
-
-  } catch (error) {
-    console.log('TikTok error:', error.message);
-    
     return {
-      id: url.match(/\/video\/(\d+)/)?.[1] || generateId(),
-      title: 'TikTok Video',
-      author: { name: 'TikTok Creator', uniqueId: 'creator', avatar: '' },
-      thumbnail: '',
-      media: [],
-      duration: null,
-      statistics: { likes: 0, comments: 0, shares: 0 },
-      downloadUrl: null,
-      error: 'Video unavailable. This may be due to:\n• Private video\n• Region restriction\n• Video deleted\n• Anti-bot protection',
-      tips: 'Try using a TikTok download API service (RapidAPI) for more reliable results'
+      id: item.id || url.match(/\/video\/(\d+)/)?.[1] || generateId(),
+      title: item.desc || ogTitle || 'TikTok Video',
+      author: {
+        name: author.nickname || author.uniqueId || 'TikTok User',
+        uniqueId: author.uniqueId || null,
+        avatar: author.avatarLarger || author.avatarMedium || ''
+      },
+      thumbnail,
+      media: [{ type: 'video', quality: 'original', url: videoUrl, format: 'mp4', watermark: false }],
+      duration: video.duration || null,
+      statistics: {
+        views: Number(stats.playCount || 0),
+        likes: Number(stats.diggCount || 0),
+        bookmarks: Number(stats.collectCount || 0),
+        comments: Number(stats.commentCount || 0),
+        shares: Number(stats.shareCount || 0)
+      },
+      downloadUrl: videoUrl,
+      source: 'tiktok_html'
     };
+  } catch (error) {
+    console.error('TikTok error:', error.message);
+    throw new Error(`TikTok extraction failed: ${error.message}`);
   }
 }
 
