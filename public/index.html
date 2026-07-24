@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Social Downloader API | Neo Brutalism</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23FF6B35' width='100' height='100'/><text y='.9em' x='50%' text-anchor='middle' font-size='80'>↓</text></svg>">
+</head>
+<body>
+  <header class="header">
+    <div class="header-content">
+      <div class="logo">
+        <span class="logo-icon">⬇</span>
+        <h1>SOCIAL DOWNLOADER API</h1>
+      </div>
+      <p class="tagline">RESTful API for downloading social media content</p>
+    </div>
+    <div class="header-decoration">
+      <div class="deco-box"></div>
+      <div class="deco-box"></div>
+      <div class="deco-box"></div>
+    </div>
+  </header>
+
+  <main class="main-container">
+    <div class="content-grid">
+      <!-- API Documentation Section -->
+      <section class="docs-section">
+        <h2 class="section-title">
+          <span class="title-number">01</span>
+          API DOCUMENTATION
+        </h2>
+        
+        <div class="endpoint-card">
+          <div class="endpoint-header">
+            <span class="method-badge post">POST</span>
+            <code class="endpoint-path">/api/download</code>
+          </div>
+          <p class="endpoint-desc">Download media from supported social platforms</p>
+          
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-label">Request Body</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code>{
+  "url": "https://tiktok.com/@user/video/123",
+  "platform": "tiktok"  // optional, auto-detected
+}</code></pre>
+          </div>
+        </div>
+
+        <div class="platforms-grid">
+          <h3 class="subsection-title">Supported Platforms</h3>
+          <div class="platform-list">
+            <div class="platform-item">
+              <span class="platform-icon tiktok">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/></svg>
+              </span>
+              <span>TikTok</span>
+            </div>
+            <div class="platform-item">
+              <span class="platform-icon instagram">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+              </span>
+              <span>Instagram</span>
+            </div>
+            <div class="platform-item">
+              <span class="platform-icon facebook">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+              </span>
+              <span>Facebook</span>
+            </div>
+            <div class="platform-item">
+              <span class="platform-icon twitter">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              </span>
+              <span>Twitter/X</span>
+            </div>
+            <div class="platform-item">
+              <span class="platform-icon threads">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.02-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.783 3.631 2.698 6.54 2.717 2.623-.021 4.佐1-.848 5.922-2.46 1.725-1.54 2.737-3.72 3.008-6.482l2.16.485c-.393 3.01-1.503 5.356-3.298 6.966-1.794 1.61-4.274 2.46-7.372 2.528z"/></svg>
+              </span>
+              <span>Threads</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-label">Response Format</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><code>{
+  "success": true,
+  "platform": "tiktok",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "data": {
+    "id": "7312345678901234567",
+    "title": "Amazing video",
+    "author": {
+      "name": "username",
+      "uniqueId": "user123",
+      "avatar": "https://..."
+    },
+    "thumbnail": "https://...",
+    "media": [
+      {
+        "type": "video",
+        "quality": "1080p",
+        "url": "https://...mp4",
+        "format": "mp4"
+      }
+    ],
+    "duration": 15.5,
+    "downloadUrl": "https://...mp4"
+  }
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- Tester Section -->
+      <section class="tester-section">
+        <h2 class="section-title">
+          <span class="title-number">02</span>
+          LIVE API TESTER
+        </h2>
+
+        <div class="tester-card">
+          <form id="downloadForm" class="tester-form">
+            <div class="form-group">
+              <label for="urlInput" class="form-label">Media URL</label>
+              <input 
+                type="url" 
+                id="urlInput" 
+                class="form-input" 
+                placeholder="https://tiktok.com/@user/video/123"
+                required
+              >
+              <span class="form-hint">Paste URL from TikTok, Instagram, Facebook, Twitter/X, or Threads</span>
+            </div>
+
+            <div class="form-group">
+              <label for="platformSelect" class="form-label">Platform</label>
+              <div class="select-wrapper">
+                <select id="platformSelect" class="form-select">
+                  <option value="">Auto-detect</option>
+                  <option value="tiktok">TikTok</option>
+                  <option value="instagram">Instagram</option>
+                  <option value="facebook">Facebook</option>
+                  <option value="twitter">Twitter/X</option>
+                  <option value="threads">Threads</option>
+                </select>
+                <span class="select-arrow">▼</span>
+              </div>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">
+              <span class="btn-text">Download</span>
+              <span class="btn-icon">⬇</span>
+            </button>
+          </form>
+
+          <div class="detected-info" id="detectedInfo" style="display: none;">
+            <span class="detected-label">Detected:</span>
+            <span class="detected-platform" id="detectedPlatform"></span>
+          </div>
+        </div>
+
+        <!-- Response Viewer -->
+        <div class="response-section">
+          <div class="response-header">
+            <h3 class="response-title">API Response</h3>
+            <button class="copy-btn" id="copyResponse" onclick="copyResponse()">Copy JSON</button>
+          </div>
+          <div class="response-viewer" id="responseViewer">
+            <pre class="response-content" id="responseContent"><span class="placeholder-text">Response will appear here after you submit a URL...</span></pre>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <p class="footer-text">SOCIAL DOWNLOADER API v1.0.0</p>
+      <p class="footer-sub">Built with Neo Brutalism Design</p>
+    </div>
+    <div class="footer-decoration">
+      <div class="footer-line"></div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
