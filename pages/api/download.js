@@ -1,10 +1,9 @@
 /**
- * Vercel Serverless Function - Social Media Downloader API
+ * Next.js API Route - Social Media Downloader
  */
 
 const cheerio = require('cheerio');
 
-// Platform detection patterns
 const platformPatterns = {
   tiktok: /tiktok\.com|vm\.tiktok\.com/i,
   instagram: /instagram\.com/i,
@@ -14,8 +13,8 @@ const platformPatterns = {
 };
 
 function detectPlatform(url) {
-  for (const [platform, pattern] of Object.entries(platformPatterns)) {
-    if (pattern.test(url)) return platform;
+  for (const [p, r] of Object.entries(platformPatterns)) {
+    if (r.test(url)) return p;
   }
   return null;
 }
@@ -114,7 +113,7 @@ async function downloadThreads(url) {
   };
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -122,7 +121,7 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   // Health check
-  if (req.method === 'GET' && (req.url === '/api' || req.url === '/api/health' || req.url === '/')) {
+  if (req.method === 'GET' && (req.url === '/api' || req.url === '/api/health')) {
     return res.json({ success: true, status: 'healthy', timestamp: new Date().toISOString(), version: '1.0.0' });
   }
 
@@ -159,14 +158,14 @@ module.exports = async function handler(req, res) {
         if (!platform) {
           return res.status(400).json({
             success: false,
-            error: { code: 'UNKNOWN_PLATFORM', message: 'Could not detect platform from URL. Please specify the platform parameter.', supported: ['tiktok', 'instagram', 'facebook', 'twitter', 'threads'] }
+            error: { code: 'UNKNOWN_PLATFORM', message: 'Could not detect platform from URL', supported: ['tiktok', 'instagram', 'facebook', 'twitter', 'threads'] }
           });
         }
       }
 
       const supportedPlatforms = ['tiktok', 'instagram', 'facebook', 'twitter', 'threads'];
       if (!supportedPlatforms.includes(platform)) {
-        return res.status(400).json({ success: false, error: { code: 'UNSUPPORTED_PLATFORM', message: `Platform "${platform}" is not supported`, supported: supportedPlatforms } });
+        return res.status(400).json({ success: false, error: { code: 'UNSUPPORTED_PLATFORM', message: `Platform "${platform}" not supported`, supported: supportedPlatforms } });
       }
 
       let result;
@@ -176,16 +175,16 @@ module.exports = async function handler(req, res) {
         case 'facebook': result = await downloadFacebook(url); break;
         case 'twitter': result = await downloadTwitter(url); break;
         case 'threads': result = await downloadThreads(url); break;
-        default: return res.status(400).json({ success: false, error: { code: 'UNSUPPORTED_PLATFORM', message: 'This platform is not supported yet' } });
+        default: return res.status(400).json({ success: false, error: { code: 'UNSUPPORTED_PLATFORM', message: 'Not supported' } });
       }
 
       return res.json({ success: true, platform, timestamp: new Date().toISOString(), data: result });
 
     } catch (error) {
       console.error('Download error:', error);
-      return res.status(500).json({ success: false, error: { code: 'DOWNLOAD_FAILED', message: error.message || 'Failed to download content' } });
+      return res.status(500).json({ success: false, error: { code: 'DOWNLOAD_FAILED', message: error.message } });
     }
   }
 
   return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Endpoint not found' } });
-};
+}

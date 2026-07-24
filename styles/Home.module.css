@@ -1,0 +1,341 @@
+/* Variables */
+:root {
+  --primary: #FF6B35;
+  --secondary: #1A1A2E;
+  --accent: #16C79A;
+  --background: #F7F7F7;
+  --surface: #FFFFFF;
+  --text: #1A1A2E;
+  --border: 3px solid #1A1A2E;
+  --shadow: 6px 6px 0 #1A1A2E;
+}
+
+/* Container */
+.container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--background);
+  font-family: 'IBM Plex Sans', sans-serif;
+}
+
+/* Header */
+.header {
+  background: var(--surface);
+  border-bottom: var(--border);
+  padding: 24px 32px;
+  position: relative;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logoIcon {
+  font-size: 48px;
+  color: var(--primary);
+  background: var(--secondary);
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--border);
+  box-shadow: var(--shadow);
+}
+
+.logo h1 {
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(24px, 4vw, 40px);
+  font-weight: 700;
+  margin: 0;
+}
+
+.tagline {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: #4A4A68;
+  margin-top: 8px;
+}
+
+.decorations {
+  position: absolute;
+  top: 50%;
+  right: 32px;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 12px;
+}
+
+.decoBox {
+  width: 24px;
+  height: 24px;
+  background: var(--primary);
+  border: var(--border);
+  box-shadow: 4px 4px 0 var(--secondary);
+}
+
+.decoBox:nth-child(2) { background: var(--accent); }
+.decoBox:nth-child(3) { background: var(--secondary); }
+
+/* Main */
+.main {
+  flex: 1;
+  padding: 48px 32px;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+}
+
+@media (max-width: 1024px) {
+  .main { grid-template-columns: 1fr; }
+}
+
+/* Section Title */
+.sectionTitle {
+  font-family: 'Space Mono', monospace;
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.titleNumber {
+  background: var(--primary);
+  color: var(--surface);
+  padding: 4px 12px;
+  font-size: 18px;
+  border: var(--border);
+  box-shadow: 4px 4px 0 var(--secondary);
+}
+
+/* Endpoint Card */
+.endpointCard {
+  background: var(--surface);
+  border: var(--border);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.endpointHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.methodBadge {
+  background: var(--primary);
+  color: white;
+  padding: 6px 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  border: 2px solid var(--secondary);
+  text-transform: uppercase;
+}
+
+.endpointCard code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px;
+  background: var(--background);
+  padding: 6px 12px;
+  border: 2px solid var(--secondary);
+}
+
+.endpointCard p {
+  color: #4A4A68;
+  margin-bottom: 16px;
+}
+
+/* Code Block */
+.codeBlock {
+  background: var(--secondary);
+  color: #E0E0E0;
+  padding: 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  overflow-x: auto;
+  border: var(--border);
+  white-space: pre;
+}
+
+/* Platform Grid */
+.platformGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 16px 0 24px;
+}
+
+.platformItem {
+  padding: 12px 16px;
+  background: var(--surface);
+  border: var(--border);
+  box-shadow: 4px 4px 0 var(--secondary);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Tester Card */
+.testerCard {
+  background: var(--surface);
+  border: var(--border);
+  box-shadow: var(--shadow);
+  padding: 32px;
+  margin-bottom: 24px;
+}
+
+.formGroup {
+  margin-bottom: 24px;
+}
+
+.formGroup label {
+  display: block;
+  font-family: 'Space Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.formGroup input,
+.formGroup select {
+  width: 100%;
+  padding: 16px;
+  font-size: 16px;
+  border: var(--border);
+  background: var(--background);
+  font-family: inherit;
+  outline: none;
+}
+
+.formGroup input:focus,
+.formGroup select:focus {
+  border-color: var(--primary);
+  box-shadow: 4px 4px 0 var(--primary);
+}
+
+.submitBtn {
+  width: 100%;
+  padding: 20px 32px;
+  background: var(--primary);
+  color: white;
+  border: var(--border);
+  box-shadow: var(--shadow);
+  font-family: 'Space Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition: transform 150ms, box-shadow 150ms;
+}
+
+.submitBtn:hover {
+  transform: translate(-4px, -4px);
+  box-shadow: 10px 10px 0 var(--secondary);
+}
+
+.submitBtn:active {
+  transform: translate(0, 0);
+  box-shadow: 2px 2px 0 var(--secondary);
+}
+
+#detectedInfo {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: var(--background);
+  border: 2px solid var(--secondary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+}
+
+#detectedPlatform {
+  color: var(--primary);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* Response Section */
+.responseSection {
+  background: var(--surface);
+  border: var(--border);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.responseSection h3 {
+  background: var(--secondary);
+  color: white;
+  padding: 16px 24px;
+  margin: 0;
+  font-family: 'Space Mono', monospace;
+  font-size: 16px;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+.copyBtn {
+  float: right;
+  margin: 12px;
+  padding: 4px 8px;
+  background: var(--accent);
+  border: 2px solid var(--secondary);
+  cursor: pointer;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+#responseViewer {
+  background: #0D0D14;
+  padding: 24px;
+  margin: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #E0E0E0;
+  min-height: 200px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.placeholder {
+  color: #666;
+}
+
+/* Footer */
+.footer {
+  background: var(--secondary);
+  color: white;
+  padding: 32px;
+  text-align: center;
+  margin-top: auto;
+}
+
+.footer p {
+  margin: 0;
+  font-family: 'Space Mono', monospace;
+}
+
+.footer p:first-child {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
+.footer p:last-child {
+  font-size: 12px;
+  opacity: 0.6;
+}
