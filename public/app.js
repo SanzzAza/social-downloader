@@ -212,7 +212,8 @@ document.getElementById('downloadForm').addEventListener('submit', async (e) => 
   setLoading(true);
   
   try {
-    const response = await fetch('/api/download', {
+    const apiUrl = window.location.origin + '/api/download';
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
