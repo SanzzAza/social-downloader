@@ -78,12 +78,22 @@ function findTikTokItem(value) {
 
 function decodeTikTokValue(value) {
   if (!value) return '';
-  return String(value)
-    .replace(/&amp;/g, '&')
-    .replace(/\\u002F/g, '/')
-    .replace(/\\u0026/g, '&')
-    .replace(/\\u003D/g, '=')
-    .replace(/\\u0025/g, '%');
+  let decoded = String(value);
+
+  // TikTok sometimes embeds URLs as HTML entities or escaped JSON values.
+  for (let i = 0; i < 3; i++) {
+    decoded = decoded
+      .replace(/&amp;/gi, '&')
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'")
+      .replace(/&#x2F;/gi, '/')
+      .replace(/\\u002F/gi, '/')
+      .replace(/\\u0026/gi, '&')
+      .replace(/\\u003D/gi, '=')
+      .replace(/\\u0025/gi, '%');
+  }
+
+  return decoded;
 }
 
 async function downloadTikTok(url) {
