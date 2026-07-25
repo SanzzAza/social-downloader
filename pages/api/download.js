@@ -56,102 +56,82 @@ function cleanTikTokUrl(url) {
 }
 
 // ============================================
-// TIKTOK - Real Scraper with proper decoding
+// TIKTOK - TikWM extractor
 // ============================================
-function parseEmbeddedJson(html, id) {
-  const re = new RegExp(`<script[^>]+id=["']${id}["'][^>]*>([\\s\\S]*?)</script>`, 'i');
-  const match = html.match(re);
-  if (!match) return null;
-  try { return JSON.parse(match[1]); } catch (_) { return null; }
+function formatDuration(seconds) {
+  const total = Number(seconds || 0);
+  if (!Number.isFinite(total)) return '0:00:00';
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-function findTikTokItem(value) {
-  if (!value || typeof value !== 'object') return null;
-  if (value.itemInfo?.itemStruct) return value.itemInfo.itemStruct;
-  if (value.itemStruct?.video || value.itemStruct?.stats) return value.itemStruct;
-  for (const child of Object.values(value)) {
-    const found = findTikTokItem(child);
-    if (found) return found;
-  }
-  return null;
-}
-
-function decodeTikTokValue(value) {
-  if (!value) return '';
-  let decoded = String(value);
-
-  // TikTok sometimes embeds URLs as HTML entities or escaped JSON values.
-  for (let i = 0; i < 3; i++) {
-    decoded = decoded
-      .replace(/&amp;/gi, '&')
-      .replace(/&quot;/gi, '"')
-      .replace(/&#39;/gi, "'")
-      .replace(/&#x2F;/gi, '/')
-      .replace(/\\u002F/gi, '/')
-      .replace(/\\u0026/gi, '&')
-      .replace(/\\u003D/gi, '=')
-      .replace(/\\u0025/gi, '%');
-  }
-
-  return decoded;
+function absoluteTikwmUrl(value) {
+  if (!value) return null;
+  try { return new URL(value, 'https://www.tikwm.com').toString(); }
+  catch (_) { return null; }
 }
 
 async function downloadTikTok(url) {
-  try {
-    const response = await fetch(url, {
-      redirect: 'follow',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9'
-      }
-    });
+  const response = await fetch('https://www.tikwm.com/api/', {
+    method: 'POST',
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 Chrome/130 Mobile Safari/537.36',
+      'Accept': '*/*',
+      'Accept-Language': 'id-ID,id;q=0.9,en;q=0.8',
+      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+      'Origin': 'https://www.tikwm.com',
+      'Referer': 'https://www.tikwm.com/'
+    },
+    body: new URLSearchParams({ url: url.trim(), hd: '1' })
+  });
 
-    if (!response.ok) throw new Error(`TikTok HTTP ${response.status}`);
+  if (!response.ok) throw new Error(`TikWM HTTP ${response.status}`);
 
-    const html = await response.text();
-    const $ = cheerio.load(html);
-    const universal = parseEmbeddedJson(html, '__UNIVERSAL_DATA_FOR_REHYDRATION__');
-    const sigi = parseEmbeddedJson(html, 'SIGI_STATE');
-    const item = findTikTokItem(universal) || findTikTokItem(sigi);
-    const video = item?.video || {};
-    const author = item?.author || {};
-    const stats = item?.stats || {};
-
-    const ogTitle = $('meta[property="og:title"]').attr('content') || '';
-    const ogImage = $('meta[property="og:image"]').attr('content') || '';
-    const videoUrl = decodeTikTokValue(video.playAddr || video.downloadAddr);
-    const thumbnail = decodeTikTokValue(video.cover || video.originCover || ogImage);
-
-    if (!item || !videoUrl.startsWith('http')) {
-      throw new Error('TikTok HTML tidak berisi data video yang bisa diputar');
-    }
-
-    return {
-      id: item.id || url.match(/\/video\/(\d+)/)?.[1] || generateId(),
-      title: item.desc || ogTitle || 'TikTok Video',
-      author: {
-        name: author.nickname || author.uniqueId || 'TikTok User',
-        uniqueId: author.uniqueId || null,
-        avatar: author.avatarLarger || author.avatarMedium || ''
-      },
-      thumbnail,
-      media: [{ type: 'video', quality: 'original', url: videoUrl, format: 'mp4', watermark: false }],
-      duration: video.duration || null,
-      statistics: {
-        views: Number(stats.playCount || 0),
-        likes: Number(stats.diggCount || 0),
-        bookmarks: Number(stats.collectCount || 0),
-        comments: Number(stats.commentCount || 0),
-        shares: Number(stats.shareCount || 0)
-      },
-      downloadUrl: videoUrl,
-      source: 'tiktok_html'
-    };
-  } catch (error) {
-    console.error('TikTok error:', error.message);
-    throw new Error(`TikTok extraction failed: ${error.message}`);
+  const result = await response.json();
+  if (result.code !== 0) {
+    throw new Error(result.msg || 'TikWM gagal mendapatkan data');
   }
+
+  const d = result.data || {};
+  const author = d.author || {};
+  const nowm = [d.play, d.hdplay].map(absoluteTikwmUrl).filter(Boolean);
+  const wm = [absoluteTikwmUrl(d.wmplay)].filter(Boolean);
+  const mp3 = [absoluteTikwmUrl(d.music)].filter(Boolean);
+  const slides = Array.isArray(d.images) ? d.images.map(absoluteTikwmUrl).filter(Boolean) : [];
+  const isSlide = slides.length > 0;
+  const primaryUrl = nowm[1] || nowm[0] || wm[0] || slides[0] || null;
+
+  if (!primaryUrl) throw new Error('TikWM tidak mengembalikan URL media');
+
+  return {
+    id: String(d.id || generateId()),
+    title: d.title || 'TikTok Video',
+    author: {
+      name: author.nickname || author.unique_id || 'TikTok User',
+      uniqueId: author.unique_id || null,
+      avatar: d.author?.avatar || ''
+    },
+    thumbnail: d.cover || '',
+    media: isSlide
+      ? slides.map(url => ({ type: 'image', url, format: 'jpg' }))
+      : [
+          ...nowm.map(url => ({ type: 'video', quality: 'no-watermark', url, format: 'mp4', watermark: false })),
+          ...wm.map(url => ({ type: 'video', quality: 'watermark', url, format: 'mp4', watermark: true })),
+          ...mp3.map(url => ({ type: 'audio', url, format: 'mp3' }))
+        ],
+    duration: formatDuration(d.duration),
+    statistics: {
+      views: Number(d.play_count || 0),
+      likes: Number(d.digg_count || 0),
+      bookmarks: Number(d.collect_count || 0),
+      comments: Number(d.comment_count || 0),
+      shares: Number(d.share_count || 0)
+    },
+    downloadUrl: primaryUrl,
+    source: 'tikwm'
+  };
 }
 
 // ============================================
