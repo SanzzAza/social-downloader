@@ -137,80 +137,118 @@ async function downloadTikTok(url) {
 // ============================================
 // INSTAGRAM - Real Scraper
 // ============================================
-async function downloadInstagram(url) {
-  url = url.split('?')[0];
-  const shortcode = url.match(/\/(reel|tv|p|stories)\/([A-Za-z0-9_-]+)/)?.[2] || generateId().slice(0, 11);
-  const isReel = url.includes('/reel/');
-  const isTV = url.includes('/tv/');
-
+function decodeSnapSave(encoded) {
   try {
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
-        'Accept': 'text/html,application/xhtml+xml',
-        'Accept-Language': 'en-US,en;q=0.9'
-      }
-    });
-
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-    const html = await response.text();
-    const $ = cheerio.load(html);
-
-    const ogVideo = $('meta[property="og:video"]').attr('content');
-    const ogImage = $('meta[property="og:image"]').attr('content');
-    const ogTitle = $('meta[property="og:title"]').attr('content');
-
-    const username = ogTitle?.match(/@(\w+)/)?.[1] || 'instagram_user';
-    const media = [];
-    
-    if (ogVideo && ogVideo.startsWith('http')) {
-      media.push({
-        type: 'video',
-        quality: '1080p',
-        url: ogVideo.split('?')[0],
-        format: 'mp4',
-        thumbnail: ogImage
+    const match = encoded.match(/\}\("([^"]+)",\s*(\d+),\s*"([^"]+)",\s*(\d+),\s*(\d+),\s*(\d+)\)/);
+    if (!match) return '';
+    const [, packed, , alphabet, offset, , base] = match;
+    const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+/';
+    const from = chars.slice(0, Number(base));
+    const to = chars.slice(0, 10);
+    const convert = value => {
+      let total = 0;
+      [...value].reverse().forEach((char, index) => {
+        const at = from.indexOf(char);
+        if (at >= 0) total += at * (Number(base) ** index);
       });
-    }
-    
-    if (ogImage && ogImage.startsWith('http')) {
-      media.push({
-        type: 'image',
-        url: ogImage.split('?')[0],
-        format: 'jpg'
-      });
-    }
-
-    if (media.length > 0) {
-      return {
-        id: shortcode,
-        shortcode: shortcode,
-        title: ogTitle || `Instagram ${isReel ? 'Reel' : isTV ? 'IGTV' : 'Post'}`,
-        author: { name: username, username: username, fullName: username },
-        type: isReel ? 'reel' : isTV ? 'igtv' : 'post',
-        thumbnail: ogImage || '',
-        media: media,
-        downloadUrl: media[0]?.url || null,
-        source: 'instagram_og'
-      };
-    }
-
-    throw new Error('No media found');
-    
-  } catch (error) {
-    console.log('Instagram error:', error.message);
-    return {
-      id: shortcode,
-      shortcode: shortcode,
-      title: `Instagram ${isReel ? 'Reel' : isTV ? 'IGTV' : 'Post'}`,
-      author: { name: 'content_creator', username: 'content_creator' },
-      type: isReel ? 'reel' : isTV ? 'igtv' : 'post',
-      media: [],
-      downloadUrl: null,
-      error: 'Media not found or unavailable'
+      let output = '';
+      do { output = to[total % 10] + output; total = Math.floor(total / 10); } while (total > 0);
+      return output || '0';
     };
+    let result = '';
+    let i = 0;
+    while (i < packed.length) {
+      let part = '';
+      while (i < packed.length && packed[i] !== alphabet[Number(offset)]) part += packed[i++];
+      for (let j = 0; j < alphabet.length; j++) part = part.split(alphabet[j]).join(String(j));
+      if (part) result += String.fromCharCode(Number(convert(part)) - Number(match[5]));
+      i++;
+    }
+    return decodeURIComponent(result);
+  } catch (_) { return ''; }
+}
+
+function extractSnapSaveJwt(link) {
+  try {
+    const token = new URL(link).searchParams.get('token');
+    if (!token) return { url: '', filename: '' };
+    const payload = token.split('.')[1];
+    const json = Buffer.from(payload.replace(/-/g, '+').replace(/_/g, '/') + '==', 'base64').toString();
+    const data = JSON.parse(json);
+    return { url: data.url || '', filename: data.filename || '' };
+  } catch (_) { return { url: '', filename: '' }; }
+}
+
+async function downloadInstagram(url) {
+  if (!/^https?:\/\/(www\.)?instagram\.com\//i.test(url)) {
+    throw new Error('URL bukan link Instagram yang valid');
   }
+
+  const cleanUrl = url.trim().replace(/[?#].*$/, '').replace(/\/?$/, '/') ;
+  const page = await fetch('https://snapsave.app/id', {
+    headers: { 'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 Chrome/130 Mobile Safari/537.36' }
+  });
+  if (!page.ok) throw new Error(`SnapSave warmup HTTP ${page.status}`);
+
+  const response = await fetch('https://snapsave.app/action.php?lang=id', {
+    method: 'POST',
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 Chrome/130 Mobile Safari/537.36',
+      'Origin': 'https://snapsave.app',
+      'Referer': 'https://snapsave.app/id',
+      'X-Requested-With': 'XMLHttpRequest',
+      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+      'Accept': '*/*'
+    },
+    body: new URLSearchParams({ url: cleanUrl })
+  });
+
+  if (!response.ok) throw new Error(`SnapSave HTTP ${response.status}`);
+  const decoded = decodeSnapSave(await response.text());
+  if (!decoded) throw new Error('Gagal decode response SnapSave');
+
+  const videoLinks = [...new Set(decoded.match(/https:\/\/d\.rapidcdn\.app\/v2\?token=[a-zA-Z0-9._-]+/g) || [])];
+  const thumbLinks = [...new Set(decoded.match(/https:\/\/d\.rapidcdn\.app\/thumb\?token=[a-zA-Z0-9._-]+/g) || [])];
+  const videos = [], images = [], thumbnails = [];
+
+  for (const proxy of videoLinks) {
+    const item = extractSnapSaveJwt(proxy);
+    if (!item.url) continue;
+    const source = `${item.url} ${item.filename}`.toLowerCase();
+    if (source.includes('.mp4')) videos.push({ url: item.url, proxy });
+    else if (/\.(jpg|jpeg|webp|png)/.test(source)) images.push({ url: item.url, proxy });
+    else videos.push({ url: item.url, proxy });
+  }
+  for (const proxy of thumbLinks) {
+    const item = extractSnapSaveJwt(proxy);
+    if (item.url) thumbnails.push(item.url);
+  }
+
+  const unique = list => [...new Map(list.map(item => [item.url, item])).values()];
+  const uniqueVideos = unique(videos);
+  const uniqueImages = unique(images);
+  const uniqueThumbs = [...new Set(thumbnails)];
+  const total = uniqueVideos.length + uniqueImages.length;
+  if (!total) throw new Error('Media Instagram tidak ditemukan atau akun private');
+
+  const media = [
+    ...uniqueVideos.map(item => ({ type: 'video', url: item.url, format: 'mp4', proxyUrl: item.proxy })),
+    ...uniqueImages.map(item => ({ type: 'image', url: item.url, format: 'jpg', proxyUrl: item.proxy }))
+  ];
+  const first = media[0];
+
+  return {
+    id: cleanUrl.match(/\/(reel|p|tv)\/([^/]+)/i)?.[2] || generateId(),
+    title: 'Instagram Media',
+    author: { name: 'Instagram User', username: 'instagram_user' },
+    type: total > 1 ? 'carousel' : first.type,
+    thumbnail: uniqueThumbs[0] || '',
+    media,
+    downloadUrl: first.url,
+    thumbnails: uniqueThumbs,
+    totalMedia: total,
+    source: 'snapsave'
+  };
 }
 
 // ============================================
