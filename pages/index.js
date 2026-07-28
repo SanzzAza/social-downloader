@@ -9,6 +9,10 @@ export default function Home() {
         <title>Social Downloader - Download Video YouTube, TikTok, Instagram, Facebook, X</title>
         <meta name="description" content="Download video YouTube (MP4/MP3), TikTok tanpa watermark, Instagram Reels, Facebook, Twitter/X dan Threads. Gratis, tanpa aplikasi, tanpa login." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <meta name="theme-color" content="#1A1A2E" />
         <meta property="og:title" content="Social Downloader" />
         <meta property="og:description" content="Download video TikTok, Instagram, Facebook, X, Threads. Gratis dan cepat." />
         <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />

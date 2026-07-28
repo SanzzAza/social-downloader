@@ -41,7 +41,7 @@ export default function StickerMaker() {
   }, [buildUrl]);
 
   const box = {
-    border: '3px solid #16161d',
+    border: '3px solid #1A1A2E',
     padding: '12px 14px',
     fontFamily: 'inherit',
     fontSize: 15,
@@ -62,7 +62,7 @@ export default function StickerMaker() {
   return (
     <div style={{
       fontFamily: '"Courier New", monospace',
-      background: '#f4f4ef',
+      background: '#F7F7F7',
       minHeight: '100vh',
       padding: '32px 20px'
     }}>
@@ -72,6 +72,11 @@ export default function StickerMaker() {
         <meta property="og:title" content="Sticker Maker - Bikin Stiker WhatsApp Custom" />
         <meta property="og:description" content="Ketik teksnya, stiker Windows XP langsung jadi." />
         <meta property="og:image" content="/api/sticker?text=NYARI%20STIKER%20WA%3F&format=png" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <meta name="theme-color" content="#1A1A2E" />
       </Head>
 
       <div style={{ maxWidth: 1000, margin: '0 auto' }}>
@@ -80,15 +85,15 @@ export default function StickerMaker() {
           style={{
             display: 'inline-block',
             marginBottom: 18,
-            border: '3px solid #16161d',
+            border: '3px solid #1A1A2E',
             background: '#fff',
-            color: '#16161d',
+            color: '#1A1A2E',
             padding: '8px 15px',
             fontSize: 12,
             fontWeight: 800,
             letterSpacing: 1,
             textDecoration: 'none',
-            boxShadow: '4px 4px 0 #16161d'
+            boxShadow: '3px 3px 0 #1A1A2E'
           }}
         >
           &larr; BALIK KE DOWNLOADER
@@ -106,15 +111,15 @@ export default function StickerMaker() {
 
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(280px, 1fr) minmax(280px, 380px)',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))',
           gap: 28,
           alignItems: 'start'
         }}>
           {/* ---- controls ---- */}
           <div style={{
             background: '#fff',
-            border: '3px solid #16161d',
-            boxShadow: '7px 7px 0 #16161d',
+            border: '3px solid #1A1A2E',
+            boxShadow: '8px 8px 0 #1A1A2E',
             padding: 24
           }}>
             <div style={field}>
@@ -144,9 +149,9 @@ export default function StickerMaker() {
                     key={p}
                     onClick={() => setTitle(p)}
                     style={{
-                      border: '2px solid #16161d',
-                      background: title === p ? '#ff5c2b' : '#fff',
-                      color: title === p ? '#fff' : '#16161d',
+                      border: '2px solid #1A1A2E',
+                      background: title === p ? '#FF6B35' : '#fff',
+                      color: title === p ? '#fff' : '#1A1A2E',
                       padding: '5px 9px',
                       fontSize: 11,
                       fontWeight: 700,
@@ -170,7 +175,7 @@ export default function StickerMaker() {
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, ...field }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 14, ...field }}>
               <div>
                 <label style={label}>Perataan</label>
                 <select value={align} onChange={e => setAlign(e.target.value)} style={box}>
@@ -188,7 +193,7 @@ export default function StickerMaker() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, ...field }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 14, ...field }}>
               <div>
                 <label style={label}>Warna Teks</label>
                 <input type="color" value={color} onChange={e => setColor(e.target.value)}
@@ -218,7 +223,7 @@ export default function StickerMaker() {
                   type="checkbox"
                   checked={character}
                   onChange={e => setCharacter(e.target.checked)}
-                  style={{ width: 20, height: 20, accentColor: '#ff5c2b', cursor: 'pointer' }}
+                  style={{ width: 20, height: 20, accentColor: '#FF6B35', cursor: 'pointer' }}
                 />
                 Tampilkan karakter 3D
               </label>
@@ -230,10 +235,10 @@ export default function StickerMaker() {
               style={{
                 display: 'block',
                 textAlign: 'center',
-                background: '#ff5c2b',
+                background: '#FF6B35',
                 color: '#fff',
-                border: '3px solid #16161d',
-                boxShadow: '5px 5px 0 #16161d',
+                border: '3px solid #1A1A2E',
+                boxShadow: '5px 5px 0 #1A1A2E',
                 padding: '15px',
                 fontWeight: 900,
                 fontSize: 16,
@@ -250,8 +255,8 @@ export default function StickerMaker() {
           <div>
             <div style={{
               background: '#fff',
-              border: '3px solid #16161d',
-              boxShadow: '7px 7px 0 #16161d',
+              border: '3px solid #1A1A2E',
+              boxShadow: '8px 8px 0 #1A1A2E',
               padding: 18
             }}>
               <div style={{ ...label, marginBottom: 12 }}>Preview</div>

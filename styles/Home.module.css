@@ -6,18 +6,69 @@
   background: #F7F7F7;
   font-family: 'IBM Plex Sans', sans-serif;
   --primary: #FF6B35;
+  --primary-dark: #E14E1B;
   --secondary: #1A1A2E;
   --accent: #16C79A;
+  --accent-warm: #FFD93D;
   --background: #F7F7F7;
   --surface: #FFFFFF;
+  --muted: #4A4A68;
+  --line: 3px;
+  /* layered shadows so depth reads consistently across components */
+  --sh-sm: 3px 3px 0 var(--secondary);
+  --sh-md: 5px 5px 0 var(--secondary);
+  --sh-lg: 8px 8px 0 var(--secondary);
+  --ease: cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+/* Subtle grid so the flat background is not dead space */
+.container::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.55;
+  background-image:
+    linear-gradient(rgba(26, 26, 46, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(26, 26, 46, 0.045) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.container > * { position: relative; z-index: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .container *, .container *::before, .container *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Header */
 .header {
   background: var(--surface);
-  border-bottom: 3px solid var(--secondary);
-  padding: 24px 32px;
+  border-bottom: var(--line) solid var(--secondary);
+  padding: 26px 32px;
   position: relative;
+  overflow: hidden;
+}
+
+/* diagonal accent stripe in the corner */
+.header::after {
+  content: '';
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 190px;
+  height: 190px;
+  background: repeating-linear-gradient(
+    45deg,
+    var(--primary) 0 10px,
+    transparent 10px 20px
+  );
+  opacity: 0.16;
+  transform: rotate(12deg);
+  pointer-events: none;
 }
 
 .logo {
@@ -27,17 +78,22 @@
 }
 
 .logoIcon {
-  font-size: 48px;
+  font-size: 44px;
   color: var(--primary);
   background: var(--secondary);
-  width: 72px;
-  height: 72px;
+  width: 68px;
+  height: 68px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 3px solid var(--secondary);
-  box-shadow: 6px 6px 0 var(--secondary);
+  border: var(--line) solid var(--secondary);
+  box-shadow: var(--sh-md);
+  transform: rotate(-3deg);
+  transition: transform 0.18s var(--ease);
+  flex-shrink: 0;
 }
+
+.logo:hover .logoIcon { transform: rotate(3deg) scale(1.04); }
 
 .logo h1 {
   font-family: 'Space Mono', monospace;
@@ -92,22 +148,33 @@
 /* Section Title */
 .sectionTitle {
   font-family: 'Space Mono', monospace;
-  font-size: 28px;
+  font-size: clamp(20px, 3vw, 26px);
   font-weight: 700;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   color: var(--secondary);
+  letter-spacing: -0.5px;
+}
+
+/* trailing rule keeps the heading from floating alone */
+.sectionTitle::after {
+  content: '';
+  flex: 1;
+  height: var(--line);
+  background: var(--secondary);
+  opacity: 0.18;
 }
 
 .titleNumber {
   background: var(--primary);
   color: var(--surface);
-  padding: 4px 12px;
-  font-size: 18px;
-  border: 3px solid var(--secondary);
-  box-shadow: 4px 4px 0 var(--secondary);
+  padding: 4px 13px;
+  font-size: 17px;
+  border: var(--line) solid var(--secondary);
+  box-shadow: var(--sh-sm);
+  flex-shrink: 0;
 }
 
 /* Endpoint Card */
@@ -192,10 +259,28 @@
 /* Tester Card */
 .testerCard {
   background: var(--surface);
-  border: 3px solid var(--secondary);
-  box-shadow: 6px 6px 0 var(--secondary);
-  padding: 32px;
-  margin-bottom: 24px;
+  border: var(--line) solid var(--secondary);
+  box-shadow: var(--sh-lg);
+  padding: 30px;
+  margin-bottom: 22px;
+  position: relative;
+}
+
+/* colour band marks this as the primary action card */
+.testerCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 7px;
+  background: linear-gradient(
+    90deg,
+    var(--primary) 0 33.3%,
+    var(--accent-warm) 33.3% 66.6%,
+    var(--accent) 66.6%
+  );
+  border-bottom: var(--line) solid var(--secondary);
 }
 
 .formGroup {
@@ -205,29 +290,39 @@
 .formGroup label {
   display: block;
   font-family: 'Space Mono', monospace;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
+  letter-spacing: 1.2px;
   text-transform: uppercase;
-  margin-bottom: 8px;
+  margin-bottom: 9px;
   color: var(--secondary);
 }
 
 .formGroup input,
 .formGroup select {
   width: 100%;
-  padding: 16px;
+  padding: 15px 16px;
   font-size: 16px;
-  border: 3px solid var(--secondary);
+  border: var(--line) solid var(--secondary);
   background: var(--background);
   font-family: inherit;
   outline: none;
   color: var(--secondary);
+  box-sizing: border-box;
+  transition: box-shadow 0.16s var(--ease), transform 0.16s var(--ease),
+              background 0.16s var(--ease);
 }
+
+.formGroup input::placeholder { color: #9A9AB0; }
+
+.formGroup input:hover,
+.formGroup select:hover { background: #fff; }
 
 .formGroup input:focus,
 .formGroup select:focus {
-  border-color: var(--primary);
-  box-shadow: 4px 4px 0 var(--primary);
+  background: #fff;
+  transform: translate(-2px, -2px);
+  box-shadow: var(--sh-md);
 }
 
 .submitBtn {
@@ -249,23 +344,66 @@
   transition: transform 150ms, box-shadow 150ms;
 }
 
-.submitBtn:hover {
-  transform: translate(-4px, -4px);
-  box-shadow: 10px 10px 0 var(--secondary);
+.submitBtn {
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 1.5px;
+  transition: transform 0.16s var(--ease), box-shadow 0.16s var(--ease),
+              background 0.16s var(--ease);
 }
 
-.submitBtn:active {
-  transform: translate(0, 0);
-  box-shadow: 2px 2px 0 var(--secondary);
+/* light sweep on hover */
+.submitBtn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(
+    90deg, transparent, rgba(255, 255, 255, 0.42), transparent
+  );
+  transform: skewX(-20deg);
+  transition: left 0.5s var(--ease);
+}
+
+.submitBtn:hover:not(:disabled)::after { left: 130%; }
+
+.submitBtn:hover:not(:disabled) {
+  background: var(--primary-dark);
+  transform: translate(-3px, -3px);
+  box-shadow: 9px 9px 0 var(--secondary);
+}
+
+.submitBtn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: var(--sh-sm);
+}
+
+.submitBtn:disabled {
+  background: var(--muted);
+  cursor: wait;
+  transform: none;
+  box-shadow: var(--sh-sm);
 }
 
 .detectedInfo {
-  margin-top: 16px;
-  padding: 12px 16px;
-  background: var(--background);
+  margin-top: 15px;
+  padding: 11px 15px;
+  background: #FFF6F2;
   border: 2px solid var(--secondary);
+  border-left: 7px solid var(--primary);
   font-family: 'JetBrains Mono', monospace;
-  font-size: 14px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  animation: popIn 0.22s var(--ease);
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .detectedPlatform {
@@ -326,9 +464,27 @@
 .footer {
   background: var(--secondary);
   color: white;
-  padding: 32px;
+  padding: 30px 32px;
   text-align: center;
   margin-top: auto;
+  border-top: var(--line) solid var(--secondary);
+  position: relative;
+}
+
+/* colour rule ties the footer back to the hero card */
+.footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--primary) 0 33.3%,
+    var(--accent-warm) 33.3% 66.6%,
+    var(--accent) 66.6%
+  );
 }
 
 .footer p {
@@ -371,17 +527,25 @@
 .navActive {
   background: var(--secondary);
   color: #fff;
+  box-shadow: var(--sh-sm);
 }
 
 .navLink {
   background: var(--primary);
   color: #fff;
-  box-shadow: 4px 4px 0 var(--secondary);
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  box-shadow: var(--sh-sm);
+  transition: transform 0.14s var(--ease), box-shadow 0.14s var(--ease),
+              background 0.14s var(--ease);
 }
 
 .navLink:hover {
-  transform: translate(2px, 2px);
+  background: var(--primary-dark);
+  transform: translate(-2px, -2px);
+  box-shadow: var(--sh-md);
+}
+
+.navLink:active {
+  transform: translate(1px, 1px);
   box-shadow: 2px 2px 0 var(--secondary);
 }
 
@@ -469,10 +633,17 @@
 /* ---- Download result panel ---- */
 .resultPanel {
   background: var(--surface);
-  border: 3px solid var(--secondary);
-  box-shadow: 6px 6px 0 var(--secondary);
+  border: var(--line) solid var(--secondary);
+  border-left: 8px solid var(--accent);
+  box-shadow: var(--sh-lg);
   padding: 20px;
-  margin-bottom: 24px;
+  margin-bottom: 22px;
+  animation: slideUp 0.28s var(--ease);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .resultHead {
@@ -483,10 +654,11 @@
 }
 
 .resultThumb {
-  width: 78px;
-  height: 78px;
+  width: 76px;
+  height: 76px;
   object-fit: cover;
-  border: 3px solid var(--secondary);
+  border: var(--line) solid var(--secondary);
+  box-shadow: var(--sh-sm);
   flex-shrink: 0;
   background: #eee;
 }
@@ -527,14 +699,28 @@
   font-weight: 700;
   letter-spacing: 0.5px;
   padding: 12px 18px;
-  border: 3px solid var(--secondary);
-  box-shadow: 4px 4px 0 var(--secondary);
+  border: var(--line) solid var(--secondary);
+  box-shadow: var(--sh-sm);
   text-decoration: none;
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  transition: transform 0.14s var(--ease), box-shadow 0.14s var(--ease),
+              background 0.14s var(--ease);
+  animation: popIn 0.26s var(--ease) backwards;
 }
 
+/* stagger so the buttons arrive one after another */
+.resultLinks :global(.dlbtn:nth-child(1)) { animation-delay: 0.04s; }
+.resultLinks :global(.dlbtn:nth-child(2)) { animation-delay: 0.10s; }
+.resultLinks :global(.dlbtn:nth-child(3)) { animation-delay: 0.16s; }
+.resultLinks :global(.dlbtn:nth-child(4)) { animation-delay: 0.22s; }
+
 .resultLinks :global(.dlbtn:hover) {
-  transform: translate(2px, 2px);
+  background: var(--primary-dark);
+  transform: translate(-2px, -2px);
+  box-shadow: var(--sh-md);
+}
+
+.resultLinks :global(.dlbtn:active) {
+  transform: translate(1px, 1px);
   box-shadow: 2px 2px 0 var(--secondary);
 }
 
@@ -571,10 +757,20 @@
   font-family: 'Space Mono', monospace;
   font-size: 12px;
   font-weight: 700;
-  padding: 6px 12px;
+  padding: 7px 13px;
   border: 2px solid var(--secondary);
   background: var(--surface);
   color: var(--secondary);
+  box-shadow: 2px 2px 0 var(--secondary);
+  transition: transform 0.14s var(--ease), background 0.14s var(--ease),
+              color 0.14s var(--ease);
+  cursor: default;
+}
+
+.platformChip:hover {
+  background: var(--secondary);
+  color: #fff;
+  transform: translateY(-2px);
 }
 
 /* ---- How-to steps ---- */
@@ -590,25 +786,50 @@
 
 .stepCard {
   background: var(--surface);
-  border: 3px solid var(--secondary);
-  box-shadow: 5px 5px 0 var(--secondary);
+  border: var(--line) solid var(--secondary);
+  box-shadow: var(--sh-md);
   padding: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease);
+}
+
+/* oversized ghost numeral for visual rhythm */
+.stepCard::after {
+  content: '';
+  position: absolute;
+  right: -18px;
+  bottom: -26px;
+  width: 84px;
+  height: 84px;
+  border: var(--line) solid var(--secondary);
+  opacity: 0.07;
+  transform: rotate(18deg);
+}
+
+.stepCard:hover {
+  transform: translate(-3px, -3px);
+  box-shadow: var(--sh-lg);
 }
 
 .stepNum {
   font-family: 'Space Mono', monospace;
-  font-size: 20px;
+  font-size: 19px;
   font-weight: 700;
   color: #fff;
   background: var(--primary);
-  border: 3px solid var(--secondary);
-  width: 42px;
-  height: 42px;
+  border: var(--line) solid var(--secondary);
+  box-shadow: var(--sh-sm);
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
+
+.stepGrid > .stepCard:nth-child(2) .stepNum { background: var(--accent-warm); color: var(--secondary); }
+.stepGrid > .stepCard:nth-child(3) .stepNum { background: var(--accent); }
 
 .stepCard p {
   font-family: 'IBM Plex Sans', sans-serif;
