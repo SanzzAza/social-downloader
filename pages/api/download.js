@@ -4,6 +4,7 @@
  */
 
 const cheerio = require('cheerio');
+const { rateLimit } = require('../../lib/rateLimit');
 
 const platformPatterns = {
   tiktok: /tiktok\.com|vm\.tiktok\.com/i,
@@ -609,32 +610,14 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // Health check
-  if (req.method === 'GET' && (req.url === '/api' || req.url === '/api/health')) {
-    return res.json({ 
-      success: true, 
-      status: 'healthy', 
-      timestamp: new Date().toISOString(), 
-      version: '1.1.0'
-    });
-  }
-
-  // Platforms list
-  if (req.method === 'GET' && req.url === '/api/platforms') {
-    return res.json({
-      success: true,
-      platforms: [
-        { name: 'TikTok', slug: 'tiktok', patterns: ['tiktok.com', 'vm.tiktok.com'] },
-        { name: 'Instagram', slug: 'instagram', patterns: ['instagram.com'] },
-        { name: 'Facebook', slug: 'facebook', patterns: ['facebook.com', 'fb.watch'] },
-        { name: 'Twitter/X', slug: 'twitter', patterns: ['twitter.com', 'x.com'] },
-        { name: 'Threads', slug: 'threads', patterns: ['threads.net', 'threads.com'] }
-      ]
-    });
-  }
+  // /api/health and /api/platforms live in their own route files;
+  // Next.js is file-routed, so they can never be served from here.
 
   // Download endpoint
-  if (req.method === 'POST' && req.url === '/api/download') {
+  if (req.method === 'POST') {
+    // Extraction hits third-party providers, so throttle it per IP.
+    if (!rateLimit(req, res, { limit: 20, windowMs: 60_000, key: 'download' })) return;
+
     try {
       const { url, platform: platformParam } = req.body || {};
 

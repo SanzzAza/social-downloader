@@ -20,6 +20,7 @@
 
 const sharp = require('sharp');
 const { renderWindowSticker } = require('../../lib/sticker');
+const { rateLimit } = require('../../lib/rateLimit');
 
 const MAX_TEXT = 300;
 const WHATSAPP_LIMIT = 100 * 1024; // 100 KB
@@ -63,6 +64,9 @@ export default async function handler(req, res) {
       error: { code: 'METHOD_NOT_ALLOWED', message: 'Gunakan GET atau POST' }
     });
   }
+
+  // Canvas rendering is CPU-bound; keep one client from hogging it.
+  if (!rateLimit(req, res, { limit: 40, windowMs: 60_000, key: 'sticker' })) return;
 
   try {
     const text = pick(req, 'text');
