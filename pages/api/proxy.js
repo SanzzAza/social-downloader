@@ -57,6 +57,10 @@ function safeFilename(value, fallback) {
   return cleaned || fallback;
 }
 
+// Streaming a large file through the function needs more than the
+// default execution budget.
+export const config = { maxDuration: 60 };
+
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', '*');

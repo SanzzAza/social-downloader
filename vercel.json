@@ -5,13 +5,5 @@
       "src": "package.json",
       "use": "@vercel/next"
     }
-  ],
-  "functions": {
-    "pages/api/download.js": {
-      "maxDuration": 60
-    },
-    "pages/api/proxy.js": {
-      "maxDuration": 60
-    }
-  }
+  ]
 }

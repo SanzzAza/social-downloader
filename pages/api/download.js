@@ -748,6 +748,10 @@ async function downloadYouTube(url) {
 // ============================================
 // API HANDLER
 // ============================================
+// Waiting on loader.to's conversion can take longer than the default
+// 10s budget, so ask for the maximum a hobby deployment allows.
+export const config = { maxDuration: 60 };
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
