@@ -537,3 +537,94 @@
   transform: translate(2px, 2px);
   box-shadow: 2px 2px 0 var(--secondary);
 }
+
+/* ---- Downloader-first layout (single column, centered) ---- */
+.mainSingle {
+  flex: 1;
+  padding: 48px 32px;
+  max-width: 860px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.heroSection {
+  margin-bottom: 56px;
+}
+
+.platformStrip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.platformStripLabel {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: #4A4A68;
+  margin-right: 4px;
+}
+
+.platformChip {
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border: 2px solid var(--secondary);
+  background: var(--surface);
+  color: var(--secondary);
+}
+
+/* ---- How-to steps ---- */
+.howSection {
+  margin-bottom: 56px;
+}
+
+.stepGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.stepCard {
+  background: var(--surface);
+  border: 3px solid var(--secondary);
+  box-shadow: 5px 5px 0 var(--secondary);
+  padding: 20px;
+}
+
+.stepNum {
+  font-family: 'Space Mono', monospace;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--primary);
+  border: 3px solid var(--secondary);
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.stepCard p {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #4A4A68;
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  .mainSingle { padding: 32px 18px; }
+  .stepGrid { grid-template-columns: 1fr; }
+}
+
+/* Decoration boxes are absolutely positioned and collide with the
+   tagline on narrow screens, so drop them there. */
+@media (max-width: 720px) {
+  .decorations { display: none; }
+}

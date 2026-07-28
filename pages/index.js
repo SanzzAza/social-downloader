@@ -6,20 +6,20 @@ export default function Home() {
   return (
     <div className={styles.container}>
       <Head>
-        <title>Social Downloader API - TikTok, Instagram, Facebook, X, Threads</title>
-        <meta name="description" content="API gratis untuk download video TikTok, Instagram Reels, Facebook, Twitter/X dan Threads tanpa watermark. Plus generator stiker WhatsApp." />
+        <title>Social Downloader - Download Video TikTok, Instagram, Facebook, X, Threads</title>
+        <meta name="description" content="Download video TikTok tanpa watermark, Instagram Reels, Facebook, Twitter/X dan Threads. Gratis, tanpa aplikasi, tanpa login." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta property="og:title" content="Social Downloader API" />
-        <meta property="og:description" content="Download video TikTok, Instagram, Facebook, X, Threads lewat satu API." />
+        <meta property="og:title" content="Social Downloader" />
+        <meta property="og:description" content="Download video TikTok, Instagram, Facebook, X, Threads. Gratis dan cepat." />
         <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
       </Head>
 
       <header className={styles.header}>
         <div className={styles.logo}>
           <span className={styles.logoIcon}>⬇</span>
-          <h1>SOCIAL DOWNLOADER API</h1>
+          <h1>SOCIAL DOWNLOADER</h1>
         </div>
-        <p className={styles.tagline}>RESTful API for downloading social media content</p>
+        <p className={styles.tagline}>Download video dari TikTok, Instagram, Facebook, X &amp; Threads</p>
 
         <nav className={styles.navBar}>
           <span className={styles.navActive}>DOWNLOADER</span>
@@ -35,79 +35,28 @@ export default function Home() {
         </div>
       </header>
 
-      <main className={styles.main}>
-        <section className={styles.docsSection}>
-          <h2 className={styles.sectionTitle}>
-            <span className={styles.titleNumber}>01</span>
-            API DOCUMENTATION
-          </h2>
-
-          <div className={styles.endpointCard}>
-            <div className={styles.endpointHeader}>
-              <span className={styles.methodBadge}>POST</span>
-              <code>/api/download</code>
-            </div>
-            <p>Download media from supported social platforms</p>
-            <pre className={styles.codeBlock}>{`{
-  "url": "https://tiktok.com/@user/video/123",
-  "platform": "tiktok"
-}`}</pre>
-          </div>
-
-          <h3>Supported Platforms</h3>
-          <div className={styles.platformGrid}>
-            <div className={styles.platformItem}>🎵 TikTok</div>
-            <div className={styles.platformItem}>📷 Instagram</div>
-            <div className={styles.platformItem}>👥 Facebook</div>
-            <div className={styles.platformItem}>🐦 Twitter/X</div>
-            <div className={styles.platformItem}>🧵 Threads</div>
-          </div>
-
-          <h3>Response Format</h3>
-          <pre className={styles.codeBlock}>{`{
-  "success": true,
-  "platform": "tiktok",
-  "data": {
-    "id": "7312345678901234567",
-    "title": "Video title",
-    "author": { "name": "username" },
-    "media": [{ "type": "video", "url": "..." }],
-    "downloadUrl": "..."
-  }
-}`}</pre>
-        </section>
-
-        <section className={styles.testerSection}>
-          <h2 className={styles.sectionTitle}>
-            <span className={styles.titleNumber}>02</span>
-            LIVE API TESTER
-          </h2>
-
+      <main className={styles.mainSingle}>
+        <section className={styles.heroSection}>
           <div className={styles.testerCard}>
             <form id="downloadForm">
               <div className={styles.formGroup}>
-                <label>Media URL</label>
-                <input type="url" id="urlInput" placeholder="https://tiktok.com/@user/video/123" required />
+                <label>Tempel link video di sini</label>
+                <input
+                  type="url"
+                  id="urlInput"
+                  placeholder="https://www.tiktok.com/@user/video/123..."
+                  required
+                />
               </div>
-              <div className={styles.formGroup}>
-                <label>Platform</label>
-                <select id="platformSelect">
-                  <option value="">Auto-detect</option>
-                  <option value="tiktok">TikTok</option>
-                  <option value="instagram">Instagram</option>
-                  <option value="facebook">Facebook</option>
-                  <option value="twitter">Twitter/X</option>
-                  <option value="threads">Threads</option>
-                </select>
-              </div>
+
               <button type="submit" className={styles.submitBtn}>
-                <span>Download</span>
+                <span>DOWNLOAD</span>
                 <span>⬇</span>
               </button>
             </form>
 
             <div className={styles.detectedInfo} id="detectedInfo" style={{display: 'none'}}>
-              Detected: <span className={styles.detectedPlatform} id="detectedPlatform"></span>
+              Terdeteksi: <span className={styles.detectedPlatform} id="detectedPlatform"></span>
             </div>
           </div>
 
@@ -122,32 +71,50 @@ export default function Home() {
             <div id="resultLinks" className={styles.resultLinks}></div>
           </div>
 
-          <div className={styles.responseSection}>
-            <h3>API Response</h3>
-            <button id="copyResponse" className={styles.copyBtn}>Copy JSON</button>
-            <pre id="responseViewer"><span className={styles.placeholder}>Response will appear here...</span></pre>
+          <div className={styles.platformStrip}>
+            <span className={styles.platformStripLabel}>Didukung:</span>
+            <span className={styles.platformChip}>TikTok</span>
+            <span className={styles.platformChip}>Instagram</span>
+            <span className={styles.platformChip}>Facebook</span>
+            <span className={styles.platformChip}>Twitter/X</span>
+            <span className={styles.platformChip}>Threads</span>
+          </div>
+        </section>
+
+        <section className={styles.howSection}>
+          <h2 className={styles.sectionTitle}>
+            <span className={styles.titleNumber}>?</span>
+            CARA PAKAI
+          </h2>
+          <div className={styles.stepGrid}>
+            <div className={styles.stepCard}>
+              <div className={styles.stepNum}>1</div>
+              <p>Salin link video dari aplikasi TikTok, Instagram, Facebook, X atau Threads.</p>
+            </div>
+            <div className={styles.stepCard}>
+              <div className={styles.stepNum}>2</div>
+              <p>Tempel link di kolom atas, lalu tekan tombol DOWNLOAD.</p>
+            </div>
+            <div className={styles.stepCard}>
+              <div className={styles.stepNum}>3</div>
+              <p>Pilih kualitas yang muncul, file langsung tersimpan di perangkat.</p>
+            </div>
           </div>
         </section>
 
         <section className={styles.stickerSection}>
           <h2 className={styles.sectionTitle}>
-            <span className={styles.titleNumber}>03</span>
-            STICKER MAKER
+            <span className={styles.titleNumber}>+</span>
+            BONUS: STICKER MAKER
           </h2>
 
           <div className={styles.stickerCard}>
             <div className={styles.stickerInfo}>
               <h3 className={styles.stickerHeading}>Bikin stiker WhatsApp custom</h3>
               <p className={styles.stickerDesc}>
-                Template jendela Windows XP — tinggal ketik teksnya. Output WebP
-                512×512 transparan, otomatis di bawah 100 KB, siap dipakai jadi
-                stiker WhatsApp.
+                Template jendela Windows XP — tinggal ketik teksnya. Hasilnya
+                WebP 512×512 transparan, siap dipakai jadi stiker WhatsApp.
               </p>
-
-              <div className={styles.endpointHeader}>
-                <span className={styles.methodBadge}>GET</span>
-                <code className={styles.endpointPath}>/api/sticker?text=HALO</code>
-              </div>
 
               <Link href="/sticker" className={styles.stickerBtn}>
                 BUKA STICKER MAKER →
@@ -167,17 +134,22 @@ export default function Home() {
       </main>
 
       <footer className={styles.footer}>
-        <p>SOCIAL DOWNLOADER API v1.0.0</p>
-        <p>Built with Neo Brutalism Design</p>
+        <p>SOCIAL DOWNLOADER</p>
+        <p>Gratis · Tanpa login · Tanpa iklan</p>
       </footer>
 
       <script dangerouslySetInnerHTML={{ __html: `
         const patterns = {
-          tiktok: /tiktok\\.com|vm\\.tiktok\\.com/i,
-          instagram: /instagram\\.com/i,
-          facebook: /facebook\\.com|fb\\.watch/i,
-          twitter: /twitter\\.com|x\\.com/i,
-          threads: /threads\\.net|threads\\.com/i
+          tiktok: /tiktok[.]com|vm[.]tiktok[.]com/i,
+          instagram: /instagram[.]com/i,
+          facebook: /facebook[.]com|fb[.]watch/i,
+          twitter: /twitter[.]com|x[.]com/i,
+          threads: /threads[.]net|threads[.]com/i
+        };
+
+        const NICE = {
+          tiktok: 'TikTok', instagram: 'Instagram', facebook: 'Facebook',
+          twitter: 'Twitter/X', threads: 'Threads'
         };
 
         function detectPlatform(url) {
@@ -187,23 +159,12 @@ export default function Home() {
           return null;
         }
 
-        function highlightJSON(json) {
-          return json.replace(/(".*?":|true|false|null|-?\\d+(?:\\.\\d*)?)/g, m => {
-            if (/^"/.test(m)) {
-              return m.includes(':') 
-                ? '<span style="color:#16C79A">'+m.slice(0,-1)+'</span>:' 
-                : '<span style="color:#FFD93D">'+m+'</span>';
-            }
-            return '<span style="color:#FF6B35">'+m+'</span>';
-          });
-        }
-
         document.getElementById('urlInput').addEventListener('input', e => {
           const p = detectPlatform(e.target.value);
           const info = document.getElementById('detectedInfo');
           if (p) {
             info.style.display = 'flex';
-            document.getElementById('detectedPlatform').textContent = p;
+            document.getElementById('detectedPlatform').textContent = NICE[p] || p;
           } else {
             info.style.display = 'none';
           }
@@ -212,39 +173,48 @@ export default function Home() {
         document.getElementById('downloadForm').addEventListener('submit', async e => {
           e.preventDefault();
           const url = document.getElementById('urlInput').value.trim();
-          const platform = document.getElementById('platformSelect').value;
           const btn = e.target.querySelector('button[type="submit"]');
-          const original = btn.textContent;
           btn.disabled = true;
-          btn.textContent = 'MEMPROSES...';
+          btn.innerHTML = '<span>MEMPROSES...</span>';
+          showLoading();
 
           try {
             const res = await fetch('/api/download', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ url, platform: platform || undefined })
+              body: JSON.stringify({ url })
             });
             const data = await res.json();
-            document.getElementById('responseViewer').innerHTML = highlightJSON(JSON.stringify(data, null, 2));
             renderResult(data, res.status);
           } catch (err) {
-            document.getElementById('responseViewer').innerHTML = '<span style="color:#E63946">Network error: ' + err.message + '</span>';
-            hideResult();
+            showError('Koneksi bermasalah', 'Cek jaringan kamu lalu coba lagi.');
           } finally {
             btn.disabled = false;
-            btn.textContent = original;
+            btn.innerHTML = '<span>DOWNLOAD</span><span>⬇</span>';
           }
         });
 
-        function hideResult() {
-          document.getElementById('resultPanel').style.display = 'none';
+        function showLoading() {
+          const panel = document.getElementById('resultPanel');
+          document.getElementById('resultThumb').style.display = 'none';
+          document.getElementById('resultTitle').textContent = 'Mengambil media...';
+          document.getElementById('resultSub').textContent = 'Tunggu sebentar ya.';
+          document.getElementById('resultLinks').innerHTML = '';
+          panel.style.display = 'block';
+        }
+
+        function showError(title, message) {
+          document.getElementById('resultThumb').style.display = 'none';
+          document.getElementById('resultTitle').textContent = title;
+          document.getElementById('resultSub').textContent = message;
+          document.getElementById('resultLinks').innerHTML = '';
+          document.getElementById('resultPanel').style.display = 'block';
         }
 
         function labelFor(item, index, seen) {
           if (item.type === 'audio') return 'AUDIO MP3';
           if (item.type === 'image') return 'GAMBAR ' + (index + 1);
           if (item.quality === 'no-watermark') {
-            // TikTok returns both SD and HD as 'no-watermark'; number them.
             seen.nowm = (seen.nowm || 0) + 1;
             return seen.nowm === 1 ? 'VIDEO NO WATERMARK' : 'VIDEO HD NO WATERMARK';
           }
@@ -255,18 +225,14 @@ export default function Home() {
         }
 
         function renderResult(data, status) {
-          const panel = document.getElementById('resultPanel');
           const links = document.getElementById('resultLinks');
 
           if (!data || !data.success) {
-            const msg = status === 429
-              ? (data.error && data.error.message) || 'Terlalu banyak request, tunggu sebentar.'
-              : (data.error && data.error.message) || 'Gagal mengambil media.';
-            panel.style.display = 'block';
-            document.getElementById('resultThumb').style.display = 'none';
-            document.getElementById('resultTitle').textContent = status === 429 ? 'Kena rate limit' : 'Gagal';
-            document.getElementById('resultSub').textContent = msg;
-            links.innerHTML = '';
+            const msg = (data && data.error && data.error.message) || 'Coba link lain ya.';
+            showError(
+              status === 429 ? 'Terlalu banyak permintaan' : 'Media tidak ditemukan',
+              msg
+            );
             return;
           }
 
@@ -275,7 +241,10 @@ export default function Home() {
             ? d.media
             : (d.downloadUrl ? [{ type: d.type || 'video', url: d.downloadUrl }] : []);
 
-          if (!media.length) { hideResult(); return; }
+          if (!media.length) {
+            showError('Media tidak ditemukan', 'Postingan mungkin private atau sudah dihapus.');
+            return;
+          }
 
           const thumb = document.getElementById('resultThumb');
           if (d.thumbnail) {
@@ -288,28 +257,20 @@ export default function Home() {
           document.getElementById('resultTitle').textContent = d.title || 'Media siap diunduh';
           const who = d.author && (d.author.name || d.author.username);
           document.getElementById('resultSub').textContent =
-            [who ? '@' + who : '', data.platform, d.source ? 'via ' + d.source : '']
-              .filter(Boolean).join(' \\u00b7 ');
+            [who ? '@' + who : '', NICE[data.platform] || data.platform]
+              .filter(Boolean).join(' · ');
 
-          // Route through /api/proxy so the file downloads directly and the
-          // expiring CDN URL is not handed to the user.
           const seen = {};
           links.innerHTML = media.map((item, i) => {
             const name = (d.id || 'media') + '-' + (i + 1) + '.' +
               (item.type === 'image' ? 'jpg' : item.type === 'audio' ? 'mp3' : 'mp4');
             const href = '/api/proxy?url=' + encodeURIComponent(item.url) +
               '&filename=' + encodeURIComponent(name);
-            return '<a class="dlbtn" href="' + href + '">' + labelFor(item, i, seen) + ' \\u2193</a>';
+            return '<a class="dlbtn" href="' + href + '">' + labelFor(item, i, seen) + ' ↓</a>';
           }).join('');
 
-          panel.style.display = 'block';
+          document.getElementById('resultPanel').style.display = 'block';
         }
-
-        document.getElementById('copyResponse').addEventListener('click', () => {
-          navigator.clipboard.writeText(document.getElementById('responseViewer').textContent);
-          document.getElementById('copyResponse').textContent = 'Copied!';
-          setTimeout(() => document.getElementById('copyResponse').textContent = 'Copy JSON', 2000);
-        });
       `}} />
     </div>
   );
