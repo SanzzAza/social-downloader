@@ -6,7 +6,11 @@ export default function Home() {
   return (
     <div className={styles.container}>
       <Head>
-        <title>Social Downloader API</title>
+        <title>Social Downloader API - TikTok, Instagram, Facebook, X, Threads</title>
+        <meta name="description" content="API gratis untuk download video TikTok, Instagram Reels, Facebook, Twitter/X dan Threads tanpa watermark. Plus generator stiker WhatsApp." />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta property="og:title" content="Social Downloader API" />
+        <meta property="og:description" content="Download video TikTok, Instagram, Facebook, X, Threads lewat satu API." />
         <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
       </Head>
 
@@ -107,6 +111,17 @@ export default function Home() {
             </div>
           </div>
 
+          <div id="resultPanel" className={styles.resultPanel} style={{display: 'none'}}>
+            <div className={styles.resultHead}>
+              <img id="resultThumb" className={styles.resultThumb} alt="" />
+              <div className={styles.resultMeta}>
+                <div id="resultTitle" className={styles.resultTitle}></div>
+                <div id="resultSub" className={styles.resultSub}></div>
+              </div>
+            </div>
+            <div id="resultLinks" className={styles.resultLinks}></div>
+          </div>
+
           <div className={styles.responseSection}>
             <h3>API Response</h3>
             <button id="copyResponse" className={styles.copyBtn}>Copy JSON</button>
@@ -198,7 +213,11 @@ export default function Home() {
           e.preventDefault();
           const url = document.getElementById('urlInput').value.trim();
           const platform = document.getElementById('platformSelect').value;
-          
+          const btn = e.target.querySelector('button[type="submit"]');
+          const original = btn.textContent;
+          btn.disabled = true;
+          btn.textContent = 'MEMPROSES...';
+
           try {
             const res = await fetch('/api/download', {
               method: 'POST',
@@ -207,10 +226,84 @@ export default function Home() {
             });
             const data = await res.json();
             document.getElementById('responseViewer').innerHTML = highlightJSON(JSON.stringify(data, null, 2));
+            renderResult(data, res.status);
           } catch (err) {
             document.getElementById('responseViewer').innerHTML = '<span style="color:#E63946">Network error: ' + err.message + '</span>';
+            hideResult();
+          } finally {
+            btn.disabled = false;
+            btn.textContent = original;
           }
         });
+
+        function hideResult() {
+          document.getElementById('resultPanel').style.display = 'none';
+        }
+
+        function labelFor(item, index, seen) {
+          if (item.type === 'audio') return 'AUDIO MP3';
+          if (item.type === 'image') return 'GAMBAR ' + (index + 1);
+          if (item.quality === 'no-watermark') {
+            // TikTok returns both SD and HD as 'no-watermark'; number them.
+            seen.nowm = (seen.nowm || 0) + 1;
+            return seen.nowm === 1 ? 'VIDEO NO WATERMARK' : 'VIDEO HD NO WATERMARK';
+          }
+          if (item.quality === 'watermark') return 'VIDEO (ADA WATERMARK)';
+          if (item.quality === 'hd') return 'VIDEO HD';
+          if (item.quality === 'sd') return 'VIDEO SD';
+          return 'VIDEO ' + (index + 1);
+        }
+
+        function renderResult(data, status) {
+          const panel = document.getElementById('resultPanel');
+          const links = document.getElementById('resultLinks');
+
+          if (!data || !data.success) {
+            const msg = status === 429
+              ? (data.error && data.error.message) || 'Terlalu banyak request, tunggu sebentar.'
+              : (data.error && data.error.message) || 'Gagal mengambil media.';
+            panel.style.display = 'block';
+            document.getElementById('resultThumb').style.display = 'none';
+            document.getElementById('resultTitle').textContent = status === 429 ? 'Kena rate limit' : 'Gagal';
+            document.getElementById('resultSub').textContent = msg;
+            links.innerHTML = '';
+            return;
+          }
+
+          const d = data.data || {};
+          const media = Array.isArray(d.media) && d.media.length
+            ? d.media
+            : (d.downloadUrl ? [{ type: d.type || 'video', url: d.downloadUrl }] : []);
+
+          if (!media.length) { hideResult(); return; }
+
+          const thumb = document.getElementById('resultThumb');
+          if (d.thumbnail) {
+            thumb.src = d.thumbnail;
+            thumb.style.display = 'block';
+          } else {
+            thumb.style.display = 'none';
+          }
+
+          document.getElementById('resultTitle').textContent = d.title || 'Media siap diunduh';
+          const who = d.author && (d.author.name || d.author.username);
+          document.getElementById('resultSub').textContent =
+            [who ? '@' + who : '', data.platform, d.source ? 'via ' + d.source : '']
+              .filter(Boolean).join(' \\u00b7 ');
+
+          // Route through /api/proxy so the file downloads directly and the
+          // expiring CDN URL is not handed to the user.
+          const seen = {};
+          links.innerHTML = media.map((item, i) => {
+            const name = (d.id || 'media') + '-' + (i + 1) + '.' +
+              (item.type === 'image' ? 'jpg' : item.type === 'audio' ? 'mp3' : 'mp4');
+            const href = '/api/proxy?url=' + encodeURIComponent(item.url) +
+              '&filename=' + encodeURIComponent(name);
+            return '<a class="dlbtn" href="' + href + '">' + labelFor(item, i, seen) + ' \\u2193</a>';
+          }).join('');
+
+          panel.style.display = 'block';
+        }
 
         document.getElementById('copyResponse').addEventListener('click', () => {
           navigator.clipboard.writeText(document.getElementById('responseViewer').textContent);

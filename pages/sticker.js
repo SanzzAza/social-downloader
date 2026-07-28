@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import Head from 'next/head';
 import Link from 'next/link';
 
 const PRESETS = [
@@ -65,6 +66,14 @@ export default function StickerMaker() {
       minHeight: '100vh',
       padding: '32px 20px'
     }}>
+      <Head>
+        <title>Sticker Maker - Bikin Stiker WhatsApp Custom</title>
+        <meta name="description" content="Generator stiker WhatsApp template jendela Windows XP. Ketik teks, langsung jadi WebP 512x512 transparan siap pakai." />
+        <meta property="og:title" content="Sticker Maker - Bikin Stiker WhatsApp Custom" />
+        <meta property="og:description" content="Ketik teksnya, stiker Windows XP langsung jadi." />
+        <meta property="og:image" content="/api/sticker?text=NYARI%20STIKER%20WA%3F&format=png" />
+      </Head>
+
       <div style={{ maxWidth: 1000, margin: '0 auto' }}>
         <Link
           href="/"
