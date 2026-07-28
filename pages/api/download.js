@@ -279,19 +279,113 @@ async function snapSaveExtract(cleanUrl, label) {
   throw new Error(`${label} extractor gagal: ${lastUpstreamError || 'tidak ada respon media'}`);
 }
 
+// ---- DownloadGram: independent fallback provider for Instagram ----
+// Returns the same { videos, images, thumbnails } shape as collectSnapSaveMedia
+// so callers can treat both providers identically.
+async function downloadGramExtract(cleanUrl) {
+  const response = await fetch('https://api.downloadgram.org/media', {
+    method: 'POST',
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Origin': 'https://downloadgram.org',
+      'Referer': 'https://downloadgram.org/'
+    },
+    body: new URLSearchParams({ url: cleanUrl })
+  });
+
+  if (!response.ok) throw new Error(`DownloadGram HTTP ${response.status}`);
+
+  // Body is JavaScript with \xNN-escaped HTML embedded in it.
+  const raw = (await response.text()).replace(
+    /\\x([0-9a-fA-F]{2})/g,
+    (_, hex) => String.fromCharCode(parseInt(hex, 16))
+  );
+
+  const tokens = [...new Set(raw.match(/token=([A-Za-z0-9._-]+)/g) || [])]
+    .map(entry => entry.slice(6));
+
+  const videos = [], images = [], thumbnails = [];
+
+  for (const token of tokens) {
+    let payload;
+    try {
+      const body = token.split('.')[1];
+      payload = JSON.parse(
+        Buffer.from(body.replace(/-/g, '+').replace(/_/g, '/') + '==', 'base64').toString()
+      );
+    } catch (_) { continue; }
+
+    const mediaUrl = payload && payload.url;
+    if (!mediaUrl) continue;
+
+    const proxy = `https://cdn.downloadgram.org/?token=${token}`;
+    const hint = `${mediaUrl} ${payload.filename || ''}`.toLowerCase();
+
+    if (/\.mp4|\/o1\/v\//.test(hint)) {
+      videos.push({ url: mediaUrl, proxy });
+    } else if (/\.(jpg|jpeg|webp|png)/.test(hint)) {
+      images.push({ url: mediaUrl, proxy });
+      thumbnails.push(mediaUrl);
+    }
+  }
+
+  if (!videos.length && !images.length) {
+    throw new Error('DownloadGram tidak mengembalikan media');
+  }
+
+  // A still returned alongside a video is the cover, not a carousel item.
+  if (videos.length) {
+    return { videos, images: [], thumbnails: [...new Set(thumbnails)] };
+  }
+  return { videos, images, thumbnails: [...new Set(thumbnails)] };
+}
+
 async function downloadInstagram(url) {
   if (!/^https?:\/\/(www\.)?instagram\.com\//i.test(url)) {
     throw new Error('URL bukan link Instagram yang valid');
   }
 
   const cleanUrl = normalizeInstagramUrl(url);
-  const decoded = await snapSaveExtract(cleanUrl, 'Instagram');
-  const { videos, images, thumbnails } = collectSnapSaveMedia(decoded);
-  const total = videos.length + images.length;
 
-  if (!total) {
-    throw new Error('Media tidak ditemukan. Post mungkin private, sudah dihapus, atau hanya untuk close friends.');
+  // Try providers in order so one outage does not take Instagram down.
+  const providers = [
+    {
+      name: 'snapsave',
+      run: async () => collectSnapSaveMedia(await snapSaveExtract(cleanUrl, 'Instagram'))
+    },
+    {
+      name: 'downloadgram',
+      run: () => downloadGramExtract(cleanUrl)
+    }
+  ];
+
+  const failures = [];
+  let extracted = null;
+  let source = '';
+
+  for (const provider of providers) {
+    try {
+      const media = await provider.run();
+      if (media.videos.length || media.images.length) {
+        extracted = media;
+        source = provider.name;
+        break;
+      }
+      failures.push(`${provider.name}: tidak ada media`);
+    } catch (error) {
+      failures.push(`${provider.name}: ${error.message}`);
+    }
   }
+
+  if (!extracted) {
+    throw new Error(
+      `Media tidak ditemukan. Post mungkin private, dihapus, atau khusus close friends. (${failures.join(' | ')})`
+    );
+  }
+
+  const { videos, images, thumbnails } = extracted;
+  const total = videos.length + images.length;
 
   const media = [
     ...videos.map(i => ({ type: 'video', url: i.url, format: 'mp4', proxyUrl: i.proxy })),
@@ -308,7 +402,7 @@ async function downloadInstagram(url) {
     downloadUrl: media[0].url,
     thumbnails,
     totalMedia: total,
-    source: 'snapsave'
+    source
   };
 }
 
