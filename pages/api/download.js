@@ -11,7 +11,8 @@ const platformPatterns = {
   instagram: /instagram\.com/i,
   facebook: /facebook\.com|fb\.watch/i,
   twitter: /twitter\.com|x\.com/i,
-  threads: /threads\.net|threads\.com/i
+  threads: /threads\.net|threads\.com/i,
+  youtube: /youtube\.com|youtu\.be|youtube-nocookie\.com/i
 };
 
 function detectPlatform(url) {
@@ -601,6 +602,146 @@ async function downloadThreads(url) {
 }
 
 // ============================================
+// YOUTUBE - InnerTube (mp4 + mp3)
+// ============================================
+function parseYouTubeId(url) {
+  try {
+    const u = new URL(url.trim());
+    const host = u.hostname.replace(/^www\./, '').toLowerCase();
+
+    if (host === 'youtu.be') return u.pathname.slice(1).split('/')[0] || null;
+
+    const v = u.searchParams.get('v');
+    if (v) return v;
+
+    // /shorts/<id>, /embed/<id>, /live/<id>, /v/<id>
+    const m = u.pathname.match(/\/(shorts|embed|live|v)\/([A-Za-z0-9_-]{6,})/);
+    if (m) return m[2];
+
+    return null;
+  } catch (_) { return null; }
+}
+
+function humanSize(bytes) {
+  const n = Number(bytes || 0);
+  if (!n) return '';
+  if (n >= 1024 * 1024 * 1024) return `${(n / 1073741824).toFixed(2)} GB`;
+  if (n >= 1024 * 1024) return `${Math.round(n / 1048576)} MB`;
+  return `${Math.round(n / 1024)} KB`;
+}
+
+async function downloadYouTube(url) {
+  const videoId = parseYouTubeId(url);
+  if (!videoId) throw new Error('Tidak menemukan ID video pada link YouTube');
+
+  // ANDROID_VR is the client that still returns plain `url` fields. The web
+  // client hands back ciphered URLs that would need the player JS solved,
+  // which is not something we can do reliably in a serverless function.
+  const response = await fetch('https://www.youtube.com/youtubei/v1/player', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12)',
+      'Accept-Language': 'en-US,en;q=0.9'
+    },
+    body: JSON.stringify({
+      videoId,
+      context: {
+        client: {
+          clientName: 'ANDROID_VR',
+          clientVersion: '1.60.19',
+          androidSdkVersion: 32,
+          deviceModel: 'Quest 3',
+          osName: 'Android',
+          osVersion: '12',
+          hl: 'en'
+        }
+      },
+      contentCheckOk: true,
+      racyCheckOk: true
+    })
+  });
+
+  if (!response.ok) throw new Error(`YouTube HTTP ${response.status}`);
+
+  const data = await response.json();
+  const status = data.playabilityStatus || {};
+
+  if (status.status && status.status !== 'OK') {
+    const reason = status.reason || status.messages?.[0] || status.status;
+    if (status.status === 'LOGIN_REQUIRED') {
+      throw new Error('Video ini butuh login (private atau dibatasi umur)');
+    }
+    throw new Error(`YouTube menolak: ${reason}`);
+  }
+
+  const details = data.videoDetails || {};
+  const streaming = data.streamingData || {};
+  const adaptive = streaming.adaptiveFormats || [];
+  const progressive = streaming.formats || [];
+
+  // Progressive formats already contain video+audio, so they play and save
+  // as-is. Higher resolutions are video-only and would need muxing, which
+  // needs ffmpeg -- not viable inside a serverless function.
+  const muxed = progressive
+    .filter(f => f.mimeType?.includes('video/mp4') && f.audioQuality)
+    .sort((a, b) => (b.height || 0) - (a.height || 0));
+
+  const audioOnly = adaptive
+    .filter(f => f.mimeType?.startsWith('audio/') && f.url)
+    .sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0));
+
+  const bestM4a = audioOnly.find(f => f.mimeType?.includes('mp4')) || audioOnly[0];
+
+  const media = [];
+
+  for (const f of muxed) {
+    if (!f.url) continue;
+    media.push({
+      type: 'video',
+      quality: f.qualityLabel || `${f.height}p`,
+      url: f.url,
+      format: 'mp4',
+      size: humanSize(f.contentLength),
+      hasAudio: true
+    });
+  }
+
+  if (bestM4a) {
+    media.push({
+      type: 'audio',
+      quality: `${Math.round((bestM4a.bitrate || 0) / 1000)}kbps`,
+      url: bestM4a.url,
+      format: bestM4a.mimeType?.includes('mp4') ? 'm4a' : 'webm',
+      size: humanSize(bestM4a.contentLength)
+    });
+  }
+
+  if (!media.length) {
+    throw new Error('YouTube tidak mengembalikan stream yang bisa diunduh');
+  }
+
+  const thumbs = details.thumbnail?.thumbnails || [];
+
+  return {
+    id: videoId,
+    title: details.title || 'YouTube Video',
+    author: {
+      name: details.author || 'YouTube',
+      username: details.channelId || ''
+    },
+    type: 'video',
+    duration: formatDuration(details.lengthSeconds),
+    thumbnail: thumbs.length ? thumbs[thumbs.length - 1].url : `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+    media,
+    downloadUrl: media[0].url,
+    statistics: { views: Number(details.viewCount || 0) },
+    totalMedia: media.length,
+    source: 'youtube_innertube'
+  };
+}
+
+// ============================================
 // API HANDLER
 // ============================================
 export default async function handler(req, res) {
@@ -635,12 +776,12 @@ export default async function handler(req, res) {
         if (!platform) {
           return res.status(400).json({
             success: false,
-            error: { code: 'UNKNOWN_PLATFORM', message: 'Could not detect platform', supported: ['tiktok', 'instagram', 'facebook', 'twitter', 'threads'] }
+            error: { code: 'UNKNOWN_PLATFORM', message: 'Could not detect platform', supported: ['tiktok', 'instagram', 'facebook', 'twitter', 'threads', 'youtube'] }
           });
         }
       }
 
-      const supportedPlatforms = ['tiktok', 'instagram', 'facebook', 'twitter', 'threads'];
+      const supportedPlatforms = ['tiktok', 'instagram', 'facebook', 'twitter', 'threads', 'youtube'];
       if (!supportedPlatforms.includes(platform)) {
         return res.status(400).json({ success: false, error: { code: 'UNSUPPORTED_PLATFORM', message: `Platform "${platform}" not supported` } });
       }
@@ -652,6 +793,7 @@ export default async function handler(req, res) {
         case 'facebook': result = await downloadFacebook(url); break;
         case 'twitter': result = await downloadTwitter(url); break;
         case 'threads': result = await downloadThreads(url); break;
+        case 'youtube': result = await downloadYouTube(url); break;
         default: throw new Error('Not supported');
       }
 

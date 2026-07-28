@@ -6,8 +6,8 @@ export default function Home() {
   return (
     <div className={styles.container}>
       <Head>
-        <title>Social Downloader - Download Video TikTok, Instagram, Facebook, X, Threads</title>
-        <meta name="description" content="Download video TikTok tanpa watermark, Instagram Reels, Facebook, Twitter/X dan Threads. Gratis, tanpa aplikasi, tanpa login." />
+        <title>Social Downloader - Download Video YouTube, TikTok, Instagram, Facebook, X</title>
+        <meta name="description" content="Download video YouTube (MP4/MP3), TikTok tanpa watermark, Instagram Reels, Facebook, Twitter/X dan Threads. Gratis, tanpa aplikasi, tanpa login." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta property="og:title" content="Social Downloader" />
         <meta property="og:description" content="Download video TikTok, Instagram, Facebook, X, Threads. Gratis dan cepat." />
@@ -19,7 +19,7 @@ export default function Home() {
           <span className={styles.logoIcon}>⬇</span>
           <h1>SOCIAL DOWNLOADER</h1>
         </div>
-        <p className={styles.tagline}>Download video dari TikTok, Instagram, Facebook, X &amp; Threads</p>
+        <p className={styles.tagline}>Download video dari YouTube, TikTok, Instagram, Facebook, X &amp; Threads</p>
 
         <nav className={styles.navBar}>
           <span className={styles.navActive}>DOWNLOADER</span>
@@ -44,7 +44,7 @@ export default function Home() {
                 <input
                   type="url"
                   id="urlInput"
-                  placeholder="https://www.tiktok.com/@user/video/123..."
+                  placeholder="https://youtube.com/watch?v=... atau link TikTok/IG/FB/X"
                   required
                 />
               </div>
@@ -79,6 +79,7 @@ export default function Home() {
             <span className={styles.platformChip}>Facebook</span>
             <span className={styles.platformChip}>Twitter/X</span>
             <span className={styles.platformChip}>Threads</span>
+            <span className={styles.platformChip}>YouTube</span>
           </div>
         </section>
 
@@ -90,7 +91,7 @@ export default function Home() {
           <div className={styles.stepGrid}>
             <div className={styles.stepCard}>
               <div className={styles.stepNum}>1</div>
-              <p>Salin link video dari aplikasi TikTok, Instagram, Facebook, X atau Threads.</p>
+              <p>Salin link video dari YouTube, TikTok, Instagram, Facebook, X atau Threads.</p>
             </div>
             <div className={styles.stepCard}>
               <div className={styles.stepNum}>2</div>
@@ -145,12 +146,13 @@ export default function Home() {
           instagram: /instagram[.]com/i,
           facebook: /facebook[.]com|fb[.]watch/i,
           twitter: /twitter[.]com|x[.]com/i,
-          threads: /threads[.]net|threads[.]com/i
+          threads: /threads[.]net|threads[.]com/i,
+          youtube: /youtube[.]com|youtu[.]be/i
         };
 
         const NICE = {
           tiktok: 'TikTok', instagram: 'Instagram', facebook: 'Facebook',
-          twitter: 'Twitter/X', threads: 'Threads'
+          twitter: 'Twitter/X', threads: 'Threads', youtube: 'YouTube'
         };
 
         function detectPlatform(url) {
@@ -221,7 +223,14 @@ export default function Home() {
         }
 
         function labelFor(item, index, seen) {
-          if (item.type === 'audio') return 'AUDIO MP3';
+          const size = item.size ? ' (' + item.size + ')' : '';
+          if (item.type === 'audio') {
+            const fmt = (item.format || 'mp3').toUpperCase();
+            return 'AUDIO ' + fmt + (item.quality ? ' ' + item.quality : '') + size;
+          }
+          if (item.hasAudio && item.quality && /\\d+p/.test(item.quality)) {
+            return 'VIDEO MP4 ' + item.quality + size;
+          }
           if (item.type === 'image') return 'GAMBAR ' + (index + 1);
           if (item.quality === 'no-watermark') {
             seen.nowm = (seen.nowm || 0) + 1;

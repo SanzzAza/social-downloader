@@ -27,7 +27,10 @@ const HOST_RULES = [
   { match: ['twimg.com'],
     referer: null, label: 'twitter', ext: 'mp4' },
   { match: ['rapidcdn.app'],
-    referer: 'https://snapsave.app/', label: 'snapsave', ext: 'mp4' }
+    referer: 'https://snapsave.app/', label: 'snapsave', ext: 'mp4' },
+  // googlevideo rejects a foreign Referer the same way twimg does
+  { match: ['googlevideo.com', 'ytimg.com', 'youtube.com'],
+    referer: null, label: 'youtube', ext: 'mp4' }
 ];
 
 function resolveRule(value) {
@@ -73,7 +76,7 @@ export default async function handler(req, res) {
       error: {
         code: 'INVALID_URL',
         message: 'Butuh URL HTTPS dari CDN yang didukung',
-        supported: ['TikTok', 'Instagram', 'Facebook', 'Twitter/X', 'SnapSave']
+        supported: ['TikTok', 'Instagram', 'Facebook', 'Twitter/X', 'YouTube', 'SnapSave']
       }
     });
   }
@@ -109,7 +112,9 @@ export default async function handler(req, res) {
     const contentType = upstream.headers.get('content-type') || 'video/mp4';
     const ext = contentType.includes('image/')
       ? (contentType.includes('png') ? 'png' : contentType.includes('webp') ? 'webp' : 'jpg')
-      : contentType.includes('audio/') ? 'mp3' : rule.ext;
+      : contentType.includes('audio/')
+        ? (contentType.includes('mp4') ? 'm4a' : contentType.includes('webm') ? 'webm' : 'mp3')
+        : rule.ext;
 
     const filename = safeFilename(
       Array.isArray(req.query.filename) ? req.query.filename[0] : req.query.filename,
