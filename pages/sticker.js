@@ -2,6 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 
+const TEMPLATES = [
+  { id: 'window', label: 'JENDELA XP', hint: 'Windows Media Player' },
+  { id: 'bsod',   label: 'BLUE SCREEN', hint: 'Layar biru error' },
+  { id: 'error',  label: 'DIALOG ERROR', hint: 'Kotak error silang merah' }
+];
+
 const PRESETS = [
   'Windows Media Player',
   'Notepad',
@@ -21,19 +27,25 @@ export default function StickerMaker() {
   const [format, setFormat] = useState('webp');
   const [size, setSize] = useState(512);
   const [character, setCharacter] = useState(true);
+  const [template, setTemplate] = useState('window');
   const [src, setSrc] = useState('');
 
   const buildUrl = useCallback((extra = {}) => {
     const p = new URLSearchParams({
-      text, title, align, format, size: String(size),
-      color: color.replace('#', ''),
-      bg: bg.replace('#', ''),
-      ...extra
+      template, text, align, format, size: String(size), ...extra
     });
+    // Colour pickers and the window title only apply to the window template;
+    // sending them would repaint BSOD white.
+    if (template === 'window') {
+      p.set('title', title);
+      p.set('color', color.replace('#', ''));
+      p.set('bg', bg.replace('#', ''));
+    }
+    if (template === 'error') p.set('title', title);
     if (subtitle) p.set('subtitle', subtitle);
     if (!character) p.set('character', '0');
     return `/api/sticker?${p.toString()}`;
-  }, [text, title, subtitle, align, color, bg, format, size, character]);
+  }, [template, text, title, subtitle, align, color, bg, format, size, character]);
 
   useEffect(() => {
     const t = setTimeout(() => setSrc(buildUrl()), 350);
@@ -123,6 +135,33 @@ export default function StickerMaker() {
             padding: 24
           }}>
             <div style={field}>
+              <label style={label}>Template</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8 }}>
+                {TEMPLATES.map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => setTemplate(t.id)}
+                    title={t.hint}
+                    style={{
+                      border: '3px solid #1A1A2E',
+                      background: template === t.id ? '#FF6B35' : '#fff',
+                      color: template === t.id ? '#fff' : '#1A1A2E',
+                      boxShadow: template === t.id ? '3px 3px 0 #1A1A2E' : 'none',
+                      padding: '11px 8px',
+                      fontSize: 11,
+                      fontWeight: 800,
+                      letterSpacing: 0.5,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit'
+                    }}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={field}>
               <label style={label}>Teks Stiker</label>
               <textarea
                 value={text}
@@ -136,7 +175,7 @@ export default function StickerMaker() {
               </div>
             </div>
 
-            <div style={field}>
+            <div style={{ ...field, display: template === 'bsod' ? 'none' : 'block' }}>
               <label style={label}>Judul Jendela</label>
               <input
                 value={title}
@@ -193,7 +232,7 @@ export default function StickerMaker() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 14, ...field }}>
+            <div style={{ display: template === 'window' ? 'grid' : 'none', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 14, ...field }}>
               <div>
                 <label style={label}>Warna Teks</label>
                 <input type="color" value={color} onChange={e => setColor(e.target.value)}

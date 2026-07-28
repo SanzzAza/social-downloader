@@ -5,6 +5,7 @@
  * POST /api/sticker   { "text": "...", "title": "...", ... }
  *
  * Query/body params:
+ *   template  window | bsod | error        default window
  *   text      (required) main sticker text, \n for manual line breaks
  *   title     titlebar caption          default "Windows Media Player"
  *   subtitle  small caption at bottom
@@ -19,7 +20,7 @@
  */
 
 const sharp = require('sharp');
-const { renderWindowSticker } = require('../../lib/sticker');
+const { renderSticker, TEMPLATE_NAMES } = require('../../lib/sticker');
 const { rateLimit } = require('../../lib/rateLimit');
 
 const MAX_TEXT = 300;
@@ -107,13 +108,23 @@ export default async function handler(req, res) {
       });
     }
 
-    const png = await renderWindowSticker({
+    const template = TEMPLATE_NAMES.includes(pick(req, 'template'))
+      ? pick(req, 'template')
+      : 'window';
+
+    // Only forward colours the caller actually set: each template has its
+    // own defaults (BSOD is blue), and passing #ffffff unconditionally
+    // painted them white.
+    const rawBg = pick(req, 'bg');
+    const rawColor = pick(req, 'color');
+
+    const png = await renderSticker(template, {
       text: String(text),
       title: pick(req, 'title') ? String(pick(req, 'title')).slice(0, 60) : undefined,
       subtitle: pick(req, 'subtitle') ? String(pick(req, 'subtitle')).slice(0, 80) : '',
       size,
-      textColor: normalizeColor(pick(req, 'color'), '#000000'),
-      bgColor: normalizeColor(pick(req, 'bg'), '#ffffff'),
+      ...(isSafeColor(rawColor) ? { textColor: normalizeColor(rawColor) } : {}),
+      ...(isSafeColor(rawBg) ? { bgColor: normalizeColor(rawBg) } : {}),
       align,
       imageUrl: imageUrl || '',
       character: !['0', 'false', 'no'].includes(String(pick(req, 'character')).toLowerCase())
