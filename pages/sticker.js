@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 
 const PRESETS = [
   'Windows Media Player',
@@ -63,6 +64,25 @@ export default function StickerMaker() {
       padding: '32px 20px'
     }}>
       <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+        <Link
+          href="/"
+          style={{
+            display: 'inline-block',
+            marginBottom: 18,
+            border: '3px solid #16161d',
+            background: '#fff',
+            color: '#16161d',
+            padding: '8px 15px',
+            fontSize: 12,
+            fontWeight: 800,
+            letterSpacing: 1,
+            textDecoration: 'none',
+            boxShadow: '4px 4px 0 #16161d'
+          }}
+        >
+          &larr; BALIK KE DOWNLOADER
+        </Link>
+
         <h1 style={{
           fontSize: 34, fontWeight: 900, margin: '0 0 4px',
           letterSpacing: -1, textTransform: 'uppercase'

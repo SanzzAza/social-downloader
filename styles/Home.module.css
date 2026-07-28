@@ -347,3 +347,121 @@
   font-size: 12px;
   opacity: 0.6;
 }
+
+/* ---- Nav bar (header) ---- */
+.navBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.navActive,
+.navLink {
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 9px 16px;
+  border: 3px solid var(--secondary);
+  text-decoration: none;
+  display: inline-block;
+}
+
+.navActive {
+  background: var(--secondary);
+  color: #fff;
+}
+
+.navLink {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 4px 4px 0 var(--secondary);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.navLink:hover {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--secondary);
+}
+
+/* ---- Sticker section ---- */
+/* .main is a 2-column grid, so span both columns for a full-width row */
+.stickerSection {
+  grid-column: 1 / -1;
+  margin-bottom: 48px;
+}
+
+.stickerCard {
+  background: var(--surface);
+  border: 3px solid var(--secondary);
+  box-shadow: 6px 6px 0 var(--secondary);
+  padding: 28px;
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 32px;
+  align-items: center;
+}
+
+.stickerHeading {
+  font-family: 'Space Mono', monospace;
+  font-size: 21px;
+  font-weight: 700;
+  margin: 0 0 10px;
+  color: var(--secondary);
+}
+
+.stickerDesc {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #4A4A68;
+  margin: 0 0 20px;
+}
+
+.stickerBtn {
+  display: inline-block;
+  margin-top: 20px;
+  background: var(--primary);
+  color: #fff;
+  font-family: 'Space Mono', monospace;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 15px 26px;
+  border: 3px solid var(--secondary);
+  box-shadow: 5px 5px 0 var(--secondary);
+  text-decoration: none;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.stickerBtn:hover {
+  transform: translate(2px, 2px);
+  box-shadow: 3px 3px 0 var(--secondary);
+}
+
+.stickerPreview {
+  border: 3px solid var(--secondary);
+  background:
+    repeating-conic-gradient(#ECECEC 0% 25%, #FFFFFF 0% 50%) 50% / 18px 18px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stickerPreview img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .stickerCard {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .stickerPreview {
+    order: -1;
+  }
+}

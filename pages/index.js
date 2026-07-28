@@ -1,4 +1,5 @@
 import Head from 'next/head';
+import Link from 'next/link';
 import styles from '../styles/Home.module.css';
 
 export default function Home() {
@@ -15,6 +16,14 @@ export default function Home() {
           <h1>SOCIAL DOWNLOADER API</h1>
         </div>
         <p className={styles.tagline}>RESTful API for downloading social media content</p>
+
+        <nav className={styles.navBar}>
+          <span className={styles.navActive}>DOWNLOADER</span>
+          <Link href="/sticker" className={styles.navLink}>
+            STICKER MAKER →
+          </Link>
+        </nav>
+
         <div className={styles.decorations}>
           <div className={styles.decoBox}></div>
           <div className={styles.decoBox}></div>
@@ -102,6 +111,42 @@ export default function Home() {
             <h3>API Response</h3>
             <button id="copyResponse" className={styles.copyBtn}>Copy JSON</button>
             <pre id="responseViewer"><span className={styles.placeholder}>Response will appear here...</span></pre>
+          </div>
+        </section>
+
+        <section className={styles.stickerSection}>
+          <h2 className={styles.sectionTitle}>
+            <span className={styles.titleNumber}>03</span>
+            STICKER MAKER
+          </h2>
+
+          <div className={styles.stickerCard}>
+            <div className={styles.stickerInfo}>
+              <h3 className={styles.stickerHeading}>Bikin stiker WhatsApp custom</h3>
+              <p className={styles.stickerDesc}>
+                Template jendela Windows XP — tinggal ketik teksnya. Output WebP
+                512×512 transparan, otomatis di bawah 100 KB, siap dipakai jadi
+                stiker WhatsApp.
+              </p>
+
+              <div className={styles.endpointHeader}>
+                <span className={styles.methodBadge}>GET</span>
+                <code className={styles.endpointPath}>/api/sticker?text=HALO</code>
+              </div>
+
+              <Link href="/sticker" className={styles.stickerBtn}>
+                BUKA STICKER MAKER →
+              </Link>
+            </div>
+
+            <div className={styles.stickerPreview}>
+              <img
+                src="/api/sticker?text=NYARI%20STIKER%20WA%3F&format=png"
+                alt="Contoh stiker Windows XP"
+                width={512}
+                height={512}
+              />
+            </div>
           </div>
         </section>
       </main>
