@@ -231,37 +231,7 @@ async function callSnapSave(cleanUrl) {
   return decodeSnapSave(await response.text());
 }
 
-async function downloadInstagram(url) {
-  if (!/^https?:\/\/(www\.)?instagram\.com\//i.test(url)) {
-    throw new Error('URL bukan link Instagram yang valid');
-  }
-
-  const cleanUrl = normalizeInstagramUrl(url);
-
-  // SnapSave kadang gagal di percobaan pertama (rate limit / cold cache) -> retry
-  let decoded = '';
-  let lastUpstreamError = '';
-  for (let attempt = 0; attempt < 3; attempt++) {
-    if (attempt > 0) await new Promise(r => setTimeout(r, 1200 * attempt));
-    try {
-      decoded = await callSnapSave(cleanUrl);
-    } catch (e) {
-      lastUpstreamError = e.message;
-      continue;
-    }
-    if (!decoded) { lastUpstreamError = 'Gagal decode response SnapSave'; continue; }
-    if (decoded.includes('d.rapidcdn.app')) break;
-
-    // SnapSave mengembalikan halaman error, bukan media
-    const alertMatch = decoded.match(/innerHTML\s*=\s*"(?:Error:\s*)?([^"]{0,160})"/);
-    lastUpstreamError = alertMatch ? alertMatch[1].trim() : 'SnapSave tidak mengembalikan media';
-    decoded = '';
-  }
-
-  if (!decoded) {
-    throw new Error(`Instagram extractor gagal: ${lastUpstreamError || 'tidak ada respon media'}`);
-  }
-
+function collectSnapSaveMedia(decoded) {
   const videoLinks = [...new Set(decoded.match(/https:\/\/d\.rapidcdn\.app\/v2\?token=[a-zA-Z0-9._-]+/g) || [])];
   const thumbLinks = [...new Set(decoded.match(/https:\/\/d\.rapidcdn\.app\/thumb\?token=[a-zA-Z0-9._-]+/g) || [])];
   const videos = [], images = [], thumbnails = [];
@@ -279,31 +249,64 @@ async function downloadInstagram(url) {
     if (item.url) thumbnails.push(item.url);
   }
 
-  const unique = list => [...new Map(list.map(item => [item.url, item])).values()];
-  const uniqueVideos = unique(videos);
-  const uniqueImages = unique(images);
-  const uniqueThumbs = [...new Set(thumbnails)];
-  const total = uniqueVideos.length + uniqueImages.length;
+  const unique = list => [...new Map(list.map(i => [i.url, i])).values()];
+  return {
+    videos: unique(videos),
+    images: unique(images),
+    thumbnails: [...new Set(thumbnails)]
+  };
+}
+
+// Runs SnapSave with retry; returns decoded payload containing media links.
+async function snapSaveExtract(cleanUrl, label) {
+  let decoded = '';
+  let lastUpstreamError = '';
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) await new Promise(r => setTimeout(r, 1200 * attempt));
+    try {
+      decoded = await callSnapSave(cleanUrl);
+    } catch (e) {
+      lastUpstreamError = e.message;
+      continue;
+    }
+    if (!decoded) { lastUpstreamError = 'Gagal decode response SnapSave'; continue; }
+    if (decoded.includes('d.rapidcdn.app')) return decoded;
+
+    const alertMatch = decoded.match(/innerHTML\s*=\s*"(?:Error:\s*)?([^"]{0,160})"/);
+    lastUpstreamError = alertMatch ? alertMatch[1].trim() : 'SnapSave tidak mengembalikan media';
+    decoded = '';
+  }
+  throw new Error(`${label} extractor gagal: ${lastUpstreamError || 'tidak ada respon media'}`);
+}
+
+async function downloadInstagram(url) {
+  if (!/^https?:\/\/(www\.)?instagram\.com\//i.test(url)) {
+    throw new Error('URL bukan link Instagram yang valid');
+  }
+
+  const cleanUrl = normalizeInstagramUrl(url);
+  const decoded = await snapSaveExtract(cleanUrl, 'Instagram');
+  const { videos, images, thumbnails } = collectSnapSaveMedia(decoded);
+  const total = videos.length + images.length;
 
   if (!total) {
     throw new Error('Media tidak ditemukan. Post mungkin private, sudah dihapus, atau hanya untuk close friends.');
   }
 
   const media = [
-    ...uniqueVideos.map(item => ({ type: 'video', url: item.url, format: 'mp4', proxyUrl: item.proxy })),
-    ...uniqueImages.map(item => ({ type: 'image', url: item.url, format: 'jpg', proxyUrl: item.proxy }))
+    ...videos.map(i => ({ type: 'video', url: i.url, format: 'mp4', proxyUrl: i.proxy })),
+    ...images.map(i => ({ type: 'image', url: i.url, format: 'jpg', proxyUrl: i.proxy }))
   ];
-  const first = media[0];
 
   return {
     id: cleanUrl.match(/\/(reel|p|tv)\/([^/]+)/i)?.[2] || generateId(),
     title: 'Instagram Media',
     author: { name: 'Instagram User', username: 'instagram_user' },
-    type: total > 1 ? 'carousel' : first.type,
-    thumbnail: uniqueThumbs[0] || '',
+    type: total > 1 ? 'carousel' : media[0].type,
+    thumbnail: thumbnails[0] || '',
     media,
-    downloadUrl: first.url,
-    thumbnails: uniqueThumbs,
+    downloadUrl: media[0].url,
+    thumbnails,
     totalMedia: total,
     source: 'snapsave'
   };
@@ -313,210 +316,193 @@ async function downloadInstagram(url) {
 // FACEBOOK - Real Scraper
 // ============================================
 async function downloadFacebook(url) {
-  url = url.split('?')[0];
-
-  try {
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml',
-        'Accept-Language': 'en-US,en;q=0.9'
-      }
-    });
-
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-    const html = await response.text();
-    const $ = cheerio.load(html);
-
-    const ogVideo = $('meta[property="og:video"]').attr('content');
-    const ogVideoSecure = $('meta[property="og:video:secure_url"]').attr('content');
-    const ogImage = $('meta[property="og:image"]').attr('content');
-    const ogTitle = $('meta[property="og:title"]').attr('content');
-
-    const videoUrl = ogVideoSecure || ogVideo;
-    const videoId = url.match(/\/videos\/(\d+)/)?.[1] || url.match(/\/watch\?v=(\d+)/)?.[1] || generateId();
-
-    if (videoUrl && videoUrl.startsWith('http')) {
-      return {
-        id: videoId,
-        title: ogTitle || 'Facebook Video',
-        author: { name: 'Facebook User', username: 'user' },
-        thumbnail: ogImage || '',
-        media: [
-          { type: 'video', quality: '1080p', url: videoUrl.split('?')[0], format: 'mp4' }
-        ],
-        downloadUrl: videoUrl.split('?')[0],
-        source: 'facebook_og'
-      };
-    }
-
-    throw new Error('No video found');
-    
-  } catch (error) {
-    console.log('Facebook error:', error.message);
-    return {
-      id: generateId(),
-      title: 'Facebook Video',
-      media: [],
-      downloadUrl: null,
-      error: 'Video not found or unavailable'
-    };
+  if (!/facebook\.com|fb\.watch/i.test(url)) {
+    throw new Error('URL bukan link Facebook yang valid');
   }
+
+  // Direct og:video scraping returns HTTP 400 for share/reel links and hits a
+  // login wall otherwise, so go through SnapSave like Instagram does.
+  const cleanUrl = url.trim().split('?')[0];
+  const decoded = await snapSaveExtract(cleanUrl, 'Facebook');
+  const { videos, images, thumbnails } = collectSnapSaveMedia(decoded);
+  const total = videos.length + images.length;
+
+  if (!total) {
+    throw new Error('Media tidak ditemukan. Video mungkin private, sudah dihapus, atau dibatasi wilayah.');
+  }
+
+  // SnapSave lists HD first, then SD
+  const media = [
+    ...videos.map((i, idx) => ({
+      type: 'video',
+      quality: idx === 0 ? 'hd' : 'sd',
+      url: i.url,
+      format: 'mp4',
+      proxyUrl: i.proxy
+    })),
+    ...images.map(i => ({ type: 'image', url: i.url, format: 'jpg', proxyUrl: i.proxy }))
+  ];
+
+  const id = url.match(/\/videos\/(\d+)/)?.[1]
+    || url.match(/[?&]v=(\d+)/)?.[1]
+    || url.match(/\/(?:share\/[rv]|reel)\/([A-Za-z0-9_-]+)/)?.[1]
+    || generateId();
+
+  return {
+    id: String(id),
+    title: 'Facebook Video',
+    author: { name: 'Facebook User', username: 'facebook_user' },
+    type: media[0].type,
+    thumbnail: thumbnails[0] || '',
+    media,
+    downloadUrl: media[0].url,
+    thumbnails,
+    totalMedia: total,
+    source: 'snapsave'
+  };
 }
 
 // ============================================
 // TWITTER/X - Real Scraper
 // ============================================
+// Twitter's syndication endpoint needs a token derived from the tweet id.
+function twitterSyndicationToken(id) {
+  return ((Number(id) / 1e15) * Math.PI)
+    .toString(36)
+    .replace(/(0+|\.)/g, '');
+}
+
 async function downloadTwitter(url) {
-  url = url.replace('x.com', 'twitter.com').split('?')[0];
+  const tweetId = url.match(/\/status(?:es)?\/(\d+)/)?.[1];
+  if (!tweetId) throw new Error('Tidak menemukan tweet ID pada URL');
 
-  try {
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'text/html,application/xhtml+xml',
-        'Accept-Language': 'en-US,en;q=0.9'
-      }
-    });
+  // Scraping twitter.com/x.com HTML is unreliable: it is behind a login wall and
+  // returns og: tags for an unrelated tweet. The syndication endpoint is the
+  // same one the official embed widget uses and returns proper JSON.
+  const endpoint = `https://cdn.syndication.twimg.com/tweet-result?id=${tweetId}`
+    + `&token=${twitterSyndicationToken(tweetId)}&lang=en`;
 
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const response = await fetch(endpoint, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+      'Accept': 'application/json'
+    }
+  });
 
-    const html = await response.text();
-    const $ = cheerio.load(html);
+  if (response.status === 404) throw new Error('Tweet tidak ditemukan, sudah dihapus, atau akun private');
+  if (!response.ok) throw new Error(`Twitter syndication HTTP ${response.status}`);
 
-    const ogVideo = $('meta[property="og:video"]').attr('content');
-    const ogVideoSecure = $('meta[property="og:video:secure_url"]').attr('content');
-    const ogImage = $('meta[property="og:image"]').attr('content');
-    const ogTitle = $('meta[property="og:title"]').attr('content');
+  let data;
+  try { data = await response.json(); }
+  catch (_) { throw new Error('Response Twitter tidak valid'); }
 
-    const tweetId = url.match(/\/status\/(\d+)/)?.[1] || generateId().slice(0, 10);
-    const username = url.match(/twitter\.com\/([^\/]+)/)?.[1] || 'user';
+  if (!data || !data.user) throw new Error('Tweet tidak ditemukan atau akun private');
 
-    const media = [];
+  const details = data.mediaDetails || [];
+  const media = [];
 
-    if (ogVideo || ogVideoSecure) {
-      const videoUrl = ogVideoSecure || ogVideo;
-      if (videoUrl.startsWith('http')) {
+  for (const item of details) {
+    if (item.video_info) {
+      const variants = (item.video_info.variants || [])
+        .filter(v => v.content_type === 'video/mp4')
+        .sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0));
+      if (variants.length) {
         media.push({
-          type: 'video',
-          quality: '720p',
-          url: videoUrl.split('?')[0],
-          format: 'mp4'
+          type: item.type === 'animated_gif' ? 'gif' : 'video',
+          quality: variants[0].bitrate ? `${Math.round(variants[0].bitrate / 1000)}kbps` : 'best',
+          url: variants[0].url,
+          format: 'mp4',
+          thumbnail: item.media_url_https || ''
         });
       }
-    }
-    
-    if (ogImage && ogImage.startsWith('http')) {
+    } else if (item.media_url_https) {
       media.push({
         type: 'image',
-        url: ogImage.split('?')[0],
-        format: ogImage.includes('.png') ? 'png' : 'jpg'
+        url: `${item.media_url_https}?name=orig`,
+        format: item.media_url_https.endsWith('.png') ? 'png' : 'jpg'
       });
     }
-
-    if (media.length > 0) {
-      return {
-        id: tweetId,
-        tweetId: tweetId,
-        title: ogTitle || `Tweet by @${username}`,
-        author: { name: username, username: username },
-        media: media,
-        isVideo: !!(ogVideo || ogVideoSecure),
-        url: url,
-        downloadUrl: media[0]?.url || null,
-        source: 'twitter_og'
-      };
-    }
-
-    throw new Error('No media found');
-    
-  } catch (error) {
-    console.log('Twitter error:', error.message);
-    return {
-      id: generateId().slice(0, 10),
-      title: `Tweet by @${url.match(/twitter\.com\/([^\/]+)/)?.[1] || 'user'}`,
-      media: [],
-      downloadUrl: null,
-      error: 'Media not found or unavailable'
-    };
   }
+
+  if (!media.length) throw new Error('Tweet ini tidak memiliki media (foto/video)');
+
+  return {
+    id: tweetId,
+    tweetId,
+    title: data.text || `Tweet by @${data.user.screen_name}`,
+    author: {
+      name: data.user.name || data.user.screen_name,
+      username: data.user.screen_name,
+      avatar: data.user.profile_image_url_https || ''
+    },
+    type: media[0].type,
+    thumbnail: media[0].thumbnail || media[0].url,
+    media,
+    isVideo: media.some(m => m.type === 'video' || m.type === 'gif'),
+    url,
+    downloadUrl: media[0].url,
+    totalMedia: media.length,
+    source: 'twitter_syndication'
+  };
 }
 
 // ============================================
 // THREADS - Real Scraper
 // ============================================
 async function downloadThreads(url) {
-  url = url.split('?')[0];
+  const cleanUrl = url.trim().split('?')[0];
 
-  try {
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15',
-        'Accept': 'text/html,application/xhtml+xml',
-        'Accept-Language': 'en-US,en;q=0.9'
-      }
-    });
-
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-    const html = await response.text();
-    const $ = cheerio.load(html);
-
-    const ogVideo = $('meta[property="og:video"]').attr('content');
-    const ogVideoSecure = $('meta[property="og:video:secure_url"]').attr('content');
-    const ogImage = $('meta[property="og:image"]').attr('content');
-    const ogTitle = $('meta[property="og:title"]').attr('content');
-
-    const postId = url.match(/\/post\/(\d+)/)?.[1] || generateId().slice(0, 12);
-    const username = url.match(/threads\.net\/@([^\/]+)/)?.[1] || 'threads_user';
-
-    const media = [];
-    const videoUrl = ogVideoSecure || ogVideo;
-
-    if (videoUrl && videoUrl.startsWith('http')) {
-      media.push({
-        type: 'video',
-        quality: '720p',
-        url: videoUrl.split('?')[0],
-        format: 'mp4',
-        thumbnail: ogImage
-      });
+  // Threads serves og: meta tags only to crawler user-agents; a normal browser
+  // UA gets the empty JS shell (which is why this used to return "Threads - Log in").
+  const response = await fetch(cleanUrl, {
+    headers: {
+      'User-Agent': 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+      'Accept': 'text/html,application/xhtml+xml',
+      'Accept-Language': 'en-US,en;q=0.9'
     }
-    
-    if (ogImage && ogImage.startsWith('http') && media.length === 0) {
-      media.push({
-        type: 'image',
-        url: ogImage.split('?')[0],
-        format: 'jpg'
-      });
-    }
+  });
 
-    if (media.length > 0) {
-      return {
-        id: postId,
-        postId: postId,
-        title: ogTitle || `Threads post by @${username}`,
-        author: { name: username, username: username, fullName: username },
-        media: media,
-        url: url,
-        downloadUrl: media[0]?.url || null,
-        source: 'threads_og'
-      };
-    }
+  if (!response.ok) throw new Error(`Threads HTTP ${response.status}`);
 
-    throw new Error('No media found');
-    
-  } catch (error) {
-    console.log('Threads error:', error.message);
-    return {
-      id: generateId().slice(0, 12),
-      title: 'Threads post',
-      media: [],
-      downloadUrl: null,
-      error: 'Media not found or unavailable'
-    };
+  const html = await response.text();
+  const $ = cheerio.load(html);
+
+  const ogTitle = $('meta[property="og:title"]').attr('content') || '';
+  const ogImage = $('meta[property="og:image"]').attr('content');
+  const ogVideo = $('meta[property="og:video:secure_url"]').attr('content')
+    || $('meta[property="og:video"]').attr('content');
+  const ogDesc = $('meta[property="og:description"]').attr('content') || '';
+
+  if (!ogTitle && !ogImage) {
+    throw new Error('Post tidak ditemukan, sudah dihapus, atau akun private');
   }
+
+  const postId = cleanUrl.match(/\/post\/([A-Za-z0-9_-]+)/)?.[1] || generateId().slice(0, 12);
+  const username = cleanUrl.match(/threads\.(?:net|com)\/@([^/]+)/)?.[1] || 'threads_user';
+
+  const media = [];
+  if (ogVideo && ogVideo.startsWith('http')) {
+    media.push({ type: 'video', url: ogVideo, format: 'mp4', thumbnail: ogImage || '' });
+  }
+  if (ogImage && ogImage.startsWith('http')) {
+    media.push({ type: 'image', url: ogImage, format: 'jpg' });
+  }
+
+  if (!media.length) throw new Error('Post ini tidak memiliki media (foto/video)');
+
+  return {
+    id: postId,
+    postId,
+    title: ogDesc || ogTitle || `Threads post by @${username}`,
+    author: { name: username, username, fullName: ogTitle.split('(')[0].trim() || username },
+    type: media[0].type,
+    thumbnail: ogImage || '',
+    media,
+    url: cleanUrl,
+    downloadUrl: media[0].url,
+    totalMedia: media.length,
+    source: 'threads_og'
+  };
 }
 
 // ============================================
