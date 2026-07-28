@@ -630,175 +630,118 @@ function humanSize(bytes) {
   return `${Math.round(n / 1024)} KB`;
 }
 
-// InnerTube clients, tried in order. No single client works for every
-// video: ANDROID_VR returns progressive (video+audio) streams but answers
-// LOGIN_REQUIRED on many videos, while IOS stays playable far more often
-// but usually only exposes adaptive streams.
-const YOUTUBE_CLIENTS = [
-  {
-    name: 'android_vr',
-    userAgent: 'com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12)',
-    client: {
-      clientName: 'ANDROID_VR',
-      clientVersion: '1.60.19',
-      androidSdkVersion: 32,
-      deviceMake: 'Oculus',
-      deviceModel: 'Quest 3',
-      osName: 'Android',
-      osVersion: '12',
-      hl: 'en'
-    }
-  },
-  {
-    name: 'ios',
-    userAgent: 'com.google.ios.youtube/20.03.02 (iPhone16,2; U; CPU iOS 18_2_1 like Mac OS X)',
-    client: {
-      clientName: 'IOS',
-      clientVersion: '20.03.02',
-      deviceMake: 'Apple',
-      deviceModel: 'iPhone16,2',
-      osName: 'iPhone',
-      osVersion: '18.2.1.22C161',
-      hl: 'en'
-    }
-  }
+// YouTube blocks datacenter IPs: calling InnerTube (or scraping the watch
+// page) straight from a serverless host answers LOGIN_REQUIRED with
+// "Sign in to confirm you're not a bot", no matter which client is used.
+// loader.to does the extraction from its own infrastructure and serves the
+// finished file from its CDN, which sidesteps the block entirely and also
+// gives real MP3 and resolutions above 360p.
+const LOADER_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+
+// format token -> how it should be presented
+const YOUTUBE_FORMATS = [
+  { token: '720', type: 'video', quality: '720p', format: 'mp4' },
+  { token: '360', type: 'video', quality: '360p', format: 'mp4' },
+  { token: 'mp3', type: 'audio', quality: '128kbps', format: 'mp3' }
 ];
 
-async function fetchYouTubePlayer(videoId, profile) {
-  const response = await fetch('https://www.youtube.com/youtubei/v1/player', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'User-Agent': profile.userAgent,
-      'Accept-Language': 'en-US,en;q=0.9',
-      'Origin': 'https://www.youtube.com'
-    },
-    body: JSON.stringify({
-      videoId,
-      context: { client: profile.client },
-      contentCheckOk: true,
-      racyCheckOk: true
-    })
-  });
+async function loaderToJob(url, formatToken) {
+  const start = await fetch(
+    `https://loader.to/ajax/download.php?format=${formatToken}&url=${encodeURIComponent(url)}`,
+    { headers: { 'User-Agent': LOADER_UA, 'Accept': 'application/json' } }
+  );
 
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return response.json();
+  if (!start.ok) throw new Error(`loader.to HTTP ${start.status}`);
+
+  const job = await start.json();
+  if (!job.success || !job.progress_url) {
+    throw new Error(job.text || job.message || 'loader.to menolak permintaan');
+  }
+  return job;
 }
 
-function collectYouTubeMedia(data) {
-  const streaming = data.streamingData || {};
-  const adaptive = streaming.adaptiveFormats || [];
-  const progressive = streaming.formats || [];
+// Conversion is async: poll until a download_url appears.
+async function loaderToWait(job, { attempts = 12, delayMs = 2500 } = {}) {
+  for (let i = 0; i < attempts; i++) {
+    await new Promise(r => setTimeout(r, delayMs));
 
-  // Progressive already carries video+audio, so it plays and saves as-is.
-  // Adaptive video is muxless and would need ffmpeg, which is not viable
-  // in a serverless function, so it is deliberately skipped.
-  const muxed = progressive
-    .filter(f => f.url && f.mimeType?.includes('video/mp4') && f.audioQuality)
-    .sort((a, b) => (b.height || 0) - (a.height || 0));
+    let progress;
+    try {
+      const res = await fetch(job.progress_url, {
+        headers: { 'User-Agent': LOADER_UA, 'Accept': 'application/json' }
+      });
+      if (!res.ok) continue;
+      progress = await res.json();
+    } catch (_) { continue; }
 
-  const audioOnly = adaptive
-    .filter(f => f.url && f.mimeType?.startsWith('audio/'))
-    .sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0));
-
-  const bestAudio = audioOnly.find(f => f.mimeType?.includes('mp4')) || audioOnly[0];
-
-  const media = [];
-
-  for (const f of muxed) {
-    media.push({
-      type: 'video',
-      quality: f.qualityLabel || `${f.height}p`,
-      url: f.url,
-      format: 'mp4',
-      size: humanSize(f.contentLength),
-      hasAudio: true
-    });
+    if (progress.download_url) return progress.download_url;
+    if (progress.text && /error|fail|unavailable/i.test(progress.text)) {
+      throw new Error(progress.text);
+    }
   }
-
-  if (bestAudio) {
-    media.push({
-      type: 'audio',
-      quality: `${Math.round((bestAudio.bitrate || 0) / 1000)}kbps`,
-      url: bestAudio.url,
-      format: bestAudio.mimeType?.includes('mp4') ? 'm4a' : 'webm',
-      size: humanSize(bestAudio.contentLength)
-    });
-  }
-
-  return media;
+  throw new Error('Konversi terlalu lama, coba lagi sebentar');
 }
 
 async function downloadYouTube(url) {
   const videoId = parseYouTubeId(url);
   if (!videoId) throw new Error('Tidak menemukan ID video pada link YouTube');
 
-  const failures = [];
-  let best = null;
+  const canonical = `https://www.youtube.com/watch?v=${videoId}`;
 
-  for (const profile of YOUTUBE_CLIENTS) {
-    let data;
-    try {
-      data = await fetchYouTubePlayer(videoId, profile);
-    } catch (error) {
-      failures.push(`${profile.name}: ${error.message}`);
-      continue;
-    }
+  // Kick off every format at once, then wait, so the user is not billed
+  // three sequential conversions worth of latency.
+  const jobs = await Promise.allSettled(
+    YOUTUBE_FORMATS.map(async spec => ({
+      spec,
+      job: await loaderToJob(canonical, spec.token)
+    }))
+  );
 
-    const status = data.playabilityStatus || {};
-    if (status.status && status.status !== 'OK') {
-      failures.push(`${profile.name}: ${status.status}`);
-      continue;
-    }
-
-    const media = collectYouTubeMedia(data);
-    if (!media.length) {
-      failures.push(`${profile.name}: tidak ada stream`);
-      continue;
-    }
-
-    const candidate = { data, media, source: profile.name };
-
-    // Prefer a client that gives a playable video file; keep looking
-    // otherwise so an audio-only result does not mask a better one.
-    if (media.some(m => m.type === 'video')) {
-      best = candidate;
-      break;
-    }
-    if (!best) best = candidate;
+  const started = jobs.filter(j => j.status === 'fulfilled').map(j => j.value);
+  if (!started.length) {
+    const why = jobs.find(j => j.status === 'rejected')?.reason?.message || 'tidak diketahui';
+    throw new Error(`Gagal memproses video YouTube: ${why}`);
   }
 
-  if (!best) {
-    const reasons = failures.join(' | ');
-    if (/LOGIN_REQUIRED/.test(reasons)) {
-      throw new Error('Video ini butuh login (private, khusus member, atau dibatasi umur)');
-    }
-    if (/UNPLAYABLE|ERROR/.test(reasons)) {
-      throw new Error('Video tidak tersedia, sudah dihapus, atau diblokir di wilayah ini');
-    }
-    throw new Error(`YouTube gagal: ${reasons || 'tidak ada respon'}`);
+  const settled = await Promise.allSettled(
+    started.map(async entry => ({
+      spec: entry.spec,
+      title: entry.job.title,
+      thumbnail: entry.job.info?.image || entry.job.thumbnail || '',
+      downloadUrl: await loaderToWait(entry.job)
+    }))
+  );
+
+  const ready = settled.filter(r => r.status === 'fulfilled').map(r => r.value);
+  if (!ready.length) {
+    const why = settled.find(r => r.status === 'rejected')?.reason?.message || 'tidak diketahui';
+    throw new Error(`Video tidak bisa diunduh: ${why}`);
   }
 
-  const details = best.data.videoDetails || {};
-  const thumbs = details.thumbnail?.thumbnails || [];
+  const order = YOUTUBE_FORMATS.map(f => f.token);
+  ready.sort((a, b) => order.indexOf(a.spec.token) - order.indexOf(b.spec.token));
+
+  const media = ready.map(entry => ({
+    type: entry.spec.type,
+    quality: entry.spec.quality,
+    url: entry.downloadUrl,
+    format: entry.spec.format,
+    hasAudio: true
+  }));
+
+  const meta = ready[0];
 
   return {
     id: videoId,
-    title: details.title || 'YouTube Video',
-    author: {
-      name: details.author || 'YouTube',
-      username: details.channelId || ''
-    },
-    type: best.media[0].type,
-    duration: formatDuration(details.lengthSeconds),
-    thumbnail: thumbs.length
-      ? thumbs[thumbs.length - 1].url
-      : `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
-    media: best.media,
-    downloadUrl: best.media[0].url,
-    statistics: { views: Number(details.viewCount || 0) },
-    totalMedia: best.media.length,
-    source: `youtube_${best.source}`
+    title: meta.title || 'YouTube Video',
+    author: { name: 'YouTube', username: '' },
+    type: media[0].type,
+    thumbnail: meta.thumbnail || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+    media,
+    downloadUrl: media[0].url,
+    totalMedia: media.length,
+    source: 'loader_to'
   };
 }
 

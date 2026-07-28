@@ -30,6 +30,9 @@ const HOST_RULES = [
     referer: 'https://snapsave.app/', label: 'snapsave', ext: 'mp4' },
   // googlevideo rejects a foreign Referer the same way twimg does
   { match: ['googlevideo.com', 'ytimg.com', 'youtube.com'],
+    referer: null, label: 'youtube', ext: 'mp4' },
+  // loader.to serves finished YouTube conversions from these CDNs
+  { match: ['savenow.to', 'loader.to', 'affadaffa.com'],
     referer: null, label: 'youtube', ext: 'mp4' }
 ];
 
