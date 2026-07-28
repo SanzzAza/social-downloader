@@ -270,18 +270,6 @@ export default function StickerMaker() {
               </div>
             </div>
 
-            <div style={{
-              marginTop: 18,
-              background: '#16161d',
-              color: '#8fe388',
-              border: '3px solid #16161d',
-              padding: 14,
-              fontSize: 11,
-              wordBreak: 'break-all'
-            }}>
-              <div style={{ color: '#fff', fontWeight: 700, marginBottom: 6 }}>API URL</div>
-              {buildUrl()}
-            </div>
           </div>
         </div>
       </div>

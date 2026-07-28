@@ -68,6 +68,7 @@ export default function Home() {
                 <div id="resultSub" className={styles.resultSub}></div>
               </div>
             </div>
+            <div id="previewBox" className={styles.previewBox} style={{display: 'none'}}></div>
             <div id="resultLinks" className={styles.resultLinks}></div>
           </div>
 
@@ -194,8 +195,15 @@ export default function Home() {
           }
         });
 
+        function hidePreview() {
+          const box = document.getElementById('previewBox');
+          box.innerHTML = '';
+          box.style.display = 'none';
+        }
+
         function showLoading() {
           const panel = document.getElementById('resultPanel');
+          hidePreview();
           document.getElementById('resultThumb').style.display = 'none';
           document.getElementById('resultTitle').textContent = 'Mengambil media...';
           document.getElementById('resultSub').textContent = 'Tunggu sebentar ya.';
@@ -204,6 +212,7 @@ export default function Home() {
         }
 
         function showError(title, message) {
+          hidePreview();
           document.getElementById('resultThumb').style.display = 'none';
           document.getElementById('resultTitle').textContent = title;
           document.getElementById('resultSub').textContent = message;
@@ -259,6 +268,24 @@ export default function Home() {
           document.getElementById('resultSub').textContent =
             [who ? '@' + who : '', NICE[data.platform] || data.platform]
               .filter(Boolean).join(' · ');
+
+          // Preview the first item inline. Uses inline=1 so the proxy sends
+          // Content-Disposition: inline instead of forcing a download.
+          const box = document.getElementById('previewBox');
+          const first = media[0];
+          const preview = '/api/proxy?url=' + encodeURIComponent(first.url) + '&inline=1';
+
+          if (first.type === 'image') {
+            box.innerHTML = '<img class="pvmedia" src="' + preview + '" alt="preview" />';
+            box.style.display = 'block';
+          } else if (first.type === 'video') {
+            box.innerHTML = '<video class="pvmedia" controls playsinline preload="metadata"' +
+              (d.thumbnail ? ' poster="' + d.thumbnail + '"' : '') +
+              ' src="' + preview + '"></video>';
+            box.style.display = 'block';
+          } else {
+            hidePreview();
+          }
 
           const seen = {};
           links.innerHTML = media.map((item, i) => {

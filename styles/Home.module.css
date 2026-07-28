@@ -628,3 +628,19 @@
 @media (max-width: 720px) {
   .decorations { display: none; }
 }
+
+/* ---- Inline media preview ---- */
+.previewBox {
+  margin-bottom: 18px;
+  border: 3px solid var(--secondary);
+  background: #000;
+  line-height: 0;
+}
+
+.previewBox :global(.pvmedia) {
+  width: 100%;
+  max-height: 460px;
+  display: block;
+  object-fit: contain;
+  background: #000;
+}

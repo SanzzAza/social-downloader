@@ -116,12 +116,21 @@ export default async function handler(req, res) {
       `${rule.label}-${Date.now()}.${ext}`
     );
 
+    // inline=1 lets a <video>/<img> play the media in place; the default
+    // stays "attachment" so download buttons still save to disk.
+    const inline = ['1', 'true', 'yes'].includes(
+      String(Array.isArray(req.query.inline) ? req.query.inline[0] : req.query.inline).toLowerCase()
+    );
+
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Range, Accept-Ranges');
     res.setHeader('Content-Type', contentType);
     res.setHeader('Accept-Ranges', upstream.headers.get('accept-ranges') || 'bytes');
-    res.setHeader('Cache-Control', 'private, no-store');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Cache-Control', inline ? 'private, max-age=600' : 'private, no-store');
+    res.setHeader(
+      'Content-Disposition',
+      `${inline ? 'inline' : 'attachment'}; filename="${filename}"`
+    );
 
     for (const name of ['content-length', 'content-range']) {
       const value = upstream.headers.get(name);
