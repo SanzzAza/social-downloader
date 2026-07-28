@@ -630,73 +630,82 @@ function humanSize(bytes) {
   return `${Math.round(n / 1024)} KB`;
 }
 
-async function downloadYouTube(url) {
-  const videoId = parseYouTubeId(url);
-  if (!videoId) throw new Error('Tidak menemukan ID video pada link YouTube');
+// InnerTube clients, tried in order. No single client works for every
+// video: ANDROID_VR returns progressive (video+audio) streams but answers
+// LOGIN_REQUIRED on many videos, while IOS stays playable far more often
+// but usually only exposes adaptive streams.
+const YOUTUBE_CLIENTS = [
+  {
+    name: 'android_vr',
+    userAgent: 'com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12)',
+    client: {
+      clientName: 'ANDROID_VR',
+      clientVersion: '1.60.19',
+      androidSdkVersion: 32,
+      deviceMake: 'Oculus',
+      deviceModel: 'Quest 3',
+      osName: 'Android',
+      osVersion: '12',
+      hl: 'en'
+    }
+  },
+  {
+    name: 'ios',
+    userAgent: 'com.google.ios.youtube/20.03.02 (iPhone16,2; U; CPU iOS 18_2_1 like Mac OS X)',
+    client: {
+      clientName: 'IOS',
+      clientVersion: '20.03.02',
+      deviceMake: 'Apple',
+      deviceModel: 'iPhone16,2',
+      osName: 'iPhone',
+      osVersion: '18.2.1.22C161',
+      hl: 'en'
+    }
+  }
+];
 
-  // ANDROID_VR is the client that still returns plain `url` fields. The web
-  // client hands back ciphered URLs that would need the player JS solved,
-  // which is not something we can do reliably in a serverless function.
+async function fetchYouTubePlayer(videoId, profile) {
   const response = await fetch('https://www.youtube.com/youtubei/v1/player', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'User-Agent': 'com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12)',
-      'Accept-Language': 'en-US,en;q=0.9'
+      'User-Agent': profile.userAgent,
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Origin': 'https://www.youtube.com'
     },
     body: JSON.stringify({
       videoId,
-      context: {
-        client: {
-          clientName: 'ANDROID_VR',
-          clientVersion: '1.60.19',
-          androidSdkVersion: 32,
-          deviceModel: 'Quest 3',
-          osName: 'Android',
-          osVersion: '12',
-          hl: 'en'
-        }
-      },
+      context: { client: profile.client },
       contentCheckOk: true,
       racyCheckOk: true
     })
   });
 
-  if (!response.ok) throw new Error(`YouTube HTTP ${response.status}`);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.json();
+}
 
-  const data = await response.json();
-  const status = data.playabilityStatus || {};
-
-  if (status.status && status.status !== 'OK') {
-    const reason = status.reason || status.messages?.[0] || status.status;
-    if (status.status === 'LOGIN_REQUIRED') {
-      throw new Error('Video ini butuh login (private atau dibatasi umur)');
-    }
-    throw new Error(`YouTube menolak: ${reason}`);
-  }
-
-  const details = data.videoDetails || {};
+function collectYouTubeMedia(data) {
   const streaming = data.streamingData || {};
   const adaptive = streaming.adaptiveFormats || [];
   const progressive = streaming.formats || [];
 
-  // Progressive formats already contain video+audio, so they play and save
-  // as-is. Higher resolutions are video-only and would need muxing, which
-  // needs ffmpeg -- not viable inside a serverless function.
+  // Progressive already carries video+audio, so it plays and saves as-is.
+  // Adaptive video is muxless and would need ffmpeg, which is not viable
+  // in a serverless function, so it is deliberately skipped.
   const muxed = progressive
-    .filter(f => f.mimeType?.includes('video/mp4') && f.audioQuality)
+    .filter(f => f.url && f.mimeType?.includes('video/mp4') && f.audioQuality)
     .sort((a, b) => (b.height || 0) - (a.height || 0));
 
   const audioOnly = adaptive
-    .filter(f => f.mimeType?.startsWith('audio/') && f.url)
+    .filter(f => f.url && f.mimeType?.startsWith('audio/'))
     .sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0));
 
-  const bestM4a = audioOnly.find(f => f.mimeType?.includes('mp4')) || audioOnly[0];
+  const bestAudio = audioOnly.find(f => f.mimeType?.includes('mp4')) || audioOnly[0];
 
   const media = [];
 
   for (const f of muxed) {
-    if (!f.url) continue;
     media.push({
       type: 'video',
       quality: f.qualityLabel || `${f.height}p`,
@@ -707,20 +716,70 @@ async function downloadYouTube(url) {
     });
   }
 
-  if (bestM4a) {
+  if (bestAudio) {
     media.push({
       type: 'audio',
-      quality: `${Math.round((bestM4a.bitrate || 0) / 1000)}kbps`,
-      url: bestM4a.url,
-      format: bestM4a.mimeType?.includes('mp4') ? 'm4a' : 'webm',
-      size: humanSize(bestM4a.contentLength)
+      quality: `${Math.round((bestAudio.bitrate || 0) / 1000)}kbps`,
+      url: bestAudio.url,
+      format: bestAudio.mimeType?.includes('mp4') ? 'm4a' : 'webm',
+      size: humanSize(bestAudio.contentLength)
     });
   }
 
-  if (!media.length) {
-    throw new Error('YouTube tidak mengembalikan stream yang bisa diunduh');
+  return media;
+}
+
+async function downloadYouTube(url) {
+  const videoId = parseYouTubeId(url);
+  if (!videoId) throw new Error('Tidak menemukan ID video pada link YouTube');
+
+  const failures = [];
+  let best = null;
+
+  for (const profile of YOUTUBE_CLIENTS) {
+    let data;
+    try {
+      data = await fetchYouTubePlayer(videoId, profile);
+    } catch (error) {
+      failures.push(`${profile.name}: ${error.message}`);
+      continue;
+    }
+
+    const status = data.playabilityStatus || {};
+    if (status.status && status.status !== 'OK') {
+      failures.push(`${profile.name}: ${status.status}`);
+      continue;
+    }
+
+    const media = collectYouTubeMedia(data);
+    if (!media.length) {
+      failures.push(`${profile.name}: tidak ada stream`);
+      continue;
+    }
+
+    const candidate = { data, media, source: profile.name };
+
+    // Prefer a client that gives a playable video file; keep looking
+    // otherwise so an audio-only result does not mask a better one.
+    if (media.some(m => m.type === 'video')) {
+      best = candidate;
+      break;
+    }
+    if (!best) best = candidate;
   }
 
+  if (!best) {
+    const reasons = failures.join(' | ');
+    if (/LOGIN_REQUIRED/.test(reasons)) {
+      throw new Error('Video ini butuh login (private, khusus member, atau dibatasi umur)');
+    }
+    if (/UNPLAYABLE|ERROR/.test(reasons)) {
+      throw new Error('Video tidak tersedia, sudah dihapus, atau diblokir di wilayah ini');
+    }
+    throw new Error(`YouTube gagal: ${reasons || 'tidak ada respon'}`);
+  }
+
+  const details = best.data.videoDetails || {};
   const thumbs = details.thumbnail?.thumbnails || [];
 
   return {
@@ -730,14 +789,16 @@ async function downloadYouTube(url) {
       name: details.author || 'YouTube',
       username: details.channelId || ''
     },
-    type: 'video',
+    type: best.media[0].type,
     duration: formatDuration(details.lengthSeconds),
-    thumbnail: thumbs.length ? thumbs[thumbs.length - 1].url : `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
-    media,
-    downloadUrl: media[0].url,
+    thumbnail: thumbs.length
+      ? thumbs[thumbs.length - 1].url
+      : `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+    media: best.media,
+    downloadUrl: best.media[0].url,
     statistics: { views: Number(details.viewCount || 0) },
-    totalMedia: media.length,
-    source: 'youtube_innertube'
+    totalMedia: best.media.length,
+    source: `youtube_${best.source}`
   };
 }
 
