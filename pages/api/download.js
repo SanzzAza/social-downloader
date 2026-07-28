@@ -137,34 +137,46 @@ async function downloadTikTok(url) {
 // ============================================
 // INSTAGRAM - Real Scraper
 // ============================================
+function snapSaveConvert(value, radix, target) {
+  const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+/'.split('');
+  const from = chars.slice(0, radix);
+  const to = chars.slice(0, target);
+  let total = [...value].reverse().reduce((acc, char, index) => {
+    const at = from.indexOf(char);
+    return at === -1 ? acc : acc + at * Math.pow(radix, index);
+  }, 0);
+  let out = '';
+  while (total > 0) {
+    out = to[total % target] + out;
+    total = (total - (total % target)) / target;
+  }
+  return out || '0';
+}
+
 function decodeSnapSave(encoded) {
   try {
-    const match = encoded.match(/\}\("([^"]+)",\s*(\d+),\s*"([^"]+)",\s*(\d+),\s*(\d+),\s*(\d+)\)/);
+    // matches: }("<packed>", <ignored>, "<alphabet>", <offsetCode>, <separatorIdx>, <ignored>)
+    const match = encoded.match(/\}\("([^"]+)",\s*\d+,\s*"([^"]+)",\s*(\d+),\s*(\d+),\s*\d+\)/);
     if (!match) return '';
-    const [, packed, , alphabet, offset, , base] = match;
-    const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+/';
-    const from = chars.slice(0, Number(base));
-    const to = chars.slice(0, 10);
-    const convert = value => {
-      let total = 0;
-      [...value].reverse().forEach((char, index) => {
-        const at = from.indexOf(char);
-        if (at >= 0) total += at * (Number(base) ** index);
-      });
-      let output = '';
-      do { output = to[total % 10] + output; total = Math.floor(total / 10); } while (total > 0);
-      return output || '0';
-    };
+
+    const packed = match[1];
+    const alphabet = match[2];
+    const offsetCode = Number(match[3]);   // charCode offset  (SnapSave arg "t")
+    const radix = Number(match[4]);        // numeral base     (SnapSave arg "e")
+    const separator = alphabet[radix];     // separator char is alphabet[radix], NOT alphabet[offset]
+
     let result = '';
-    let i = 0;
-    while (i < packed.length) {
+    for (let i = 0; i < packed.length; i++) {
       let part = '';
-      while (i < packed.length && packed[i] !== alphabet[Number(offset)]) part += packed[i++];
-      for (let j = 0; j < alphabet.length; j++) part = part.split(alphabet[j]).join(String(j));
-      if (part) result += String.fromCharCode(Number(convert(part)) - Number(match[5]));
-      i++;
+      while (i < packed.length && packed[i] !== separator) part += packed[i++];
+      for (let j = 0; j < alphabet.length; j++) {
+        part = part.split(alphabet[j]).join(String(j));
+      }
+      result += String.fromCharCode(Number(snapSaveConvert(part, radix, 10)) - offsetCode);
     }
-    return decodeURIComponent(result);
+
+    // SnapSave emits UTF-8 bytes as latin1 chars -> unescape/decodeURIComponent round-trip
+    try { return decodeURIComponent(escape(result)); } catch (_) { return result; }
   } catch (_) { return ''; }
 }
 
@@ -179,21 +191,33 @@ function extractSnapSaveJwt(link) {
   } catch (_) { return { url: '', filename: '' }; }
 }
 
-async function downloadInstagram(url) {
-  if (!/^https?:\/\/(www\.)?instagram\.com\//i.test(url)) {
-    throw new Error('URL bukan link Instagram yang valid');
-  }
+const SNAPSAVE_UA = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36';
 
-  const cleanUrl = url.trim().replace(/[?#].*$/, '').replace(/\/?$/, '/') ;
-  const page = await fetch('https://snapsave.app/id', {
-    headers: { 'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 Chrome/130 Mobile Safari/537.36' }
-  });
-  if (!page.ok) throw new Error(`SnapSave warmup HTTP ${page.status}`);
+function normalizeInstagramUrl(raw) {
+  const u = new URL(raw.trim());
+  u.hostname = 'www.instagram.com';
+  u.search = '';
+  u.hash = '';
+  // strip profile segment: /username/reel/CODE/ -> /reel/CODE/
+  const m = u.pathname.match(/\/(reel|reels|p|tv)\/([A-Za-z0-9_-]+)/i);
+  if (m) {
+    const kind = m[1].toLowerCase() === 'reels' ? 'reel' : m[1].toLowerCase();
+    u.pathname = `/${kind}/${m[2]}/`;
+  } else if (!u.pathname.endsWith('/')) {
+    u.pathname += '/';
+  }
+  return u.toString();
+}
+
+async function callSnapSave(cleanUrl) {
+  await fetch('https://snapsave.app/id', {
+    headers: { 'User-Agent': SNAPSAVE_UA, 'Accept': 'text/html' }
+  }).catch(() => {});
 
   const response = await fetch('https://snapsave.app/action.php?lang=id', {
     method: 'POST',
     headers: {
-      'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 Chrome/130 Mobile Safari/537.36',
+      'User-Agent': SNAPSAVE_UA,
       'Origin': 'https://snapsave.app',
       'Referer': 'https://snapsave.app/id',
       'X-Requested-With': 'XMLHttpRequest',
@@ -204,8 +228,39 @@ async function downloadInstagram(url) {
   });
 
   if (!response.ok) throw new Error(`SnapSave HTTP ${response.status}`);
-  const decoded = decodeSnapSave(await response.text());
-  if (!decoded) throw new Error('Gagal decode response SnapSave');
+  return decodeSnapSave(await response.text());
+}
+
+async function downloadInstagram(url) {
+  if (!/^https?:\/\/(www\.)?instagram\.com\//i.test(url)) {
+    throw new Error('URL bukan link Instagram yang valid');
+  }
+
+  const cleanUrl = normalizeInstagramUrl(url);
+
+  // SnapSave kadang gagal di percobaan pertama (rate limit / cold cache) -> retry
+  let decoded = '';
+  let lastUpstreamError = '';
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) await new Promise(r => setTimeout(r, 1200 * attempt));
+    try {
+      decoded = await callSnapSave(cleanUrl);
+    } catch (e) {
+      lastUpstreamError = e.message;
+      continue;
+    }
+    if (!decoded) { lastUpstreamError = 'Gagal decode response SnapSave'; continue; }
+    if (decoded.includes('d.rapidcdn.app')) break;
+
+    // SnapSave mengembalikan halaman error, bukan media
+    const alertMatch = decoded.match(/innerHTML\s*=\s*"(?:Error:\s*)?([^"]{0,160})"/);
+    lastUpstreamError = alertMatch ? alertMatch[1].trim() : 'SnapSave tidak mengembalikan media';
+    decoded = '';
+  }
+
+  if (!decoded) {
+    throw new Error(`Instagram extractor gagal: ${lastUpstreamError || 'tidak ada respon media'}`);
+  }
 
   const videoLinks = [...new Set(decoded.match(/https:\/\/d\.rapidcdn\.app\/v2\?token=[a-zA-Z0-9._-]+/g) || [])];
   const thumbLinks = [...new Set(decoded.match(/https:\/\/d\.rapidcdn\.app\/thumb\?token=[a-zA-Z0-9._-]+/g) || [])];
@@ -229,7 +284,10 @@ async function downloadInstagram(url) {
   const uniqueImages = unique(images);
   const uniqueThumbs = [...new Set(thumbnails)];
   const total = uniqueVideos.length + uniqueImages.length;
-  if (!total) throw new Error('Media Instagram tidak ditemukan atau akun private');
+
+  if (!total) {
+    throw new Error('Media tidak ditemukan. Post mungkin private, sudah dihapus, atau hanya untuk close friends.');
+  }
 
   const media = [
     ...uniqueVideos.map(item => ({ type: 'video', url: item.url, format: 'mp4', proxyUrl: item.proxy })),
