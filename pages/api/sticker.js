@@ -14,6 +14,7 @@
  *   bg        content background         default #ffffff
  *   align     left | center | right      default left
  *   image     URL of a picture to place on the right
+ *   character 0 to hide the default shrug mascot
  *   download  1 to force file download
  */
 
@@ -110,7 +111,8 @@ export default async function handler(req, res) {
       textColor: normalizeColor(pick(req, 'color'), '#000000'),
       bgColor: normalizeColor(pick(req, 'bg'), '#ffffff'),
       align,
-      imageUrl: imageUrl || ''
+      imageUrl: imageUrl || '',
+      character: !['0', 'false', 'no'].includes(String(pick(req, 'character')).toLowerCase())
     });
 
     const buffer = format === 'png'

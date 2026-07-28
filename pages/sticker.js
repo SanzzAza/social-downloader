@@ -19,6 +19,7 @@ export default function StickerMaker() {
   const [bg, setBg] = useState('#ffffff');
   const [format, setFormat] = useState('webp');
   const [size, setSize] = useState(512);
+  const [character, setCharacter] = useState(true);
   const [src, setSrc] = useState('');
 
   const buildUrl = useCallback((extra = {}) => {
@@ -29,8 +30,9 @@ export default function StickerMaker() {
       ...extra
     });
     if (subtitle) p.set('subtitle', subtitle);
+    if (!character) p.set('character', '0');
     return `/api/sticker?${p.toString()}`;
-  }, [text, title, subtitle, align, color, bg, format, size]);
+  }, [text, title, subtitle, align, color, bg, format, size, character]);
 
   useEffect(() => {
     const t = setTimeout(() => setSrc(buildUrl()), 350);
@@ -196,6 +198,21 @@ export default function StickerMaker() {
                   <option value={1024}>1024px</option>
                 </select>
               </div>
+            </div>
+
+            <div style={field}>
+              <label style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                cursor: 'pointer', fontWeight: 700, fontSize: 13
+              }}>
+                <input
+                  type="checkbox"
+                  checked={character}
+                  onChange={e => setCharacter(e.target.checked)}
+                  style={{ width: 20, height: 20, accentColor: '#ff5c2b', cursor: 'pointer' }}
+                />
+                Tampilkan karakter 3D
+              </label>
             </div>
 
             <a
