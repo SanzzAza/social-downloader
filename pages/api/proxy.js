@@ -33,7 +33,9 @@ const HOST_RULES = [
     referer: null, label: 'youtube', ext: 'mp4' },
   // loader.to serves finished YouTube conversions from these CDNs
   { match: ['savenow.to', 'loader.to', 'affadaffa.com'],
-    referer: null, label: 'youtube', ext: 'mp4' }
+    referer: null, label: 'youtube', ext: 'mp4' },
+  { match: ['pinimg.com'],
+    referer: 'https://www.pinterest.com/', label: 'pinterest', ext: 'jpg' }
 ];
 
 function resolveRule(value) {

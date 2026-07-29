@@ -822,14 +822,29 @@ async function downloadPinterest(url) {
     });
     const html = await pageRes.text();
     
-    // Look for original high-res images in the HTML
-    const originalImageMatch = html.match(/https:\/\/i\.pinimg\.com\/originals\/[a-zA-Z0-9\/._-]+\.(jpg|png|gif|jpeg)/g);
-    const ogImage = html.match(/<meta property="og:image" content="([^"]+)"/)?.[1];
-    const ogTitle = html.match(/<meta property="og:title" content="([^"]+)"/)?.[1];
+    let imageToUse = '';
     
-    const imageToUse = (originalImageMatch && originalImageMatch[0]) || ogImage;
+    // Try to extract from Pinterest's internal JSON data first
+    const jsonMatch = html.match(/<script id="__PINTEREST_WEB_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
+    if (jsonMatch) {
+      try {
+        const jsonData = JSON.parse(jsonMatch[1]);
+        const pinData = jsonData.initialReduxState?.pins?.[pinId] || Object.values(jsonData.initialReduxState?.pins || {})[0];
+        if (pinData) {
+          imageToUse = pinData.images?.orig?.url || pinData.images?.['736x']?.url;
+        }
+      } catch (e) {}
+    }
+
+    if (!imageToUse) {
+      // Fallback to regex matches for originals
+      const originalImageMatch = html.match(/https:\/\/i\.pinimg\.com\/originals\/[a-zA-Z0-9\/._-]+\.(jpg|png|gif|jpeg)/g);
+      const ogImage = html.match(/<meta property="og:image" content="([^"]+)"/)?.[1];
+      imageToUse = (originalImageMatch && originalImageMatch[0]) || ogImage;
+    }
     
     if (imageToUse) {
+      const ogTitle = html.match(/<meta property="og:title" content="([^"]+)"/)?.[1];
       return {
         id: pinId || generateId(),
         title: ogTitle || 'Pinterest Image',
