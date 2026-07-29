@@ -751,69 +751,115 @@ async function downloadYouTube(url) {
 // PINTEREST - Extractor
 // ============================================
 async function downloadPinterest(url) {
-  // 1. First, handle potential short URLs by following redirects
   let targetUrl = url;
-  if (url.includes('pin.it')) {
-    const res = await fetch(url, { redirect: 'follow' });
-    targetUrl = res.url;
+  try {
+    if (url.includes('pin.it')) {
+      const res = await fetch(url, { redirect: 'follow' });
+      targetUrl = res.url;
+    }
+  } catch (e) {
+    console.error('Redirect error:', e);
   }
 
-  // 2. Use a different, more stable API provider
-  // Trying a more reliable endpoint or a different public API
-  const response = await fetch(`https://api.vreden.my.id/api/pinterest?url=${encodeURIComponent(targetUrl)}`);
-  const data = await response.json();
+  const providers = [
+    `https://widipe.com/pinterest?url=${encodeURIComponent(targetUrl)}`,
+    `https://api.vreden.my.id/api/pinterest?url=${encodeURIComponent(targetUrl)}`,
+    `https://api.tiklydown.eu.org/api/download/pinterest?url=${encodeURIComponent(targetUrl)}`
+  ];
 
-  if (!data || !data.status || !data.result) {
-    throw new Error('Gagal mendapatkan media dari Pinterest. API mungkin sedang down.');
+  for (const api of providers) {
+    try {
+      const res = await fetch(api);
+      const data = await res.json();
+      
+      // Handle various API response formats
+      const result = data.result || data.data || data;
+      const media = [];
+      
+      const video = result.video || result.video_url || result.url_video;
+      const image = result.image || result.image_url || result.url_image || result.images_orig?.url;
+      
+      if (video) media.push({ type: 'video', url: video, format: 'mp4', quality: 'hd' });
+      if (image) media.push({ type: 'image', url: image, format: 'jpg' });
+
+      if (media.length > 0) {
+        return {
+          id: generateId(),
+          title: result.title || 'Pinterest Media',
+          author: { name: 'Pinterest User' },
+          thumbnail: image || '',
+          media,
+          downloadUrl: media[0].url,
+          source: 'api-fallback'
+        };
+      }
+    } catch (e) {
+      console.error(`Provider ${api} failed:`, e.message);
+    }
   }
 
-  const res = data.result;
-  const media = [];
-  
-  if (res.video) {
-    media.push({ type: 'video', url: res.video, format: 'mp4', quality: 'hd' });
-  } else if (res.image) {
-    media.push({ type: 'image', url: res.image, format: 'jpg' });
+  // FINAL FALLBACK: Simple Scraper for images
+  try {
+    const pageRes = await fetch(targetUrl, { 
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+    });
+    const html = await pageRes.text();
+    const ogImage = html.match(/<meta property="og:image" content="([^"]+)"/)?.[1];
+    const ogTitle = html.match(/<meta property="og:title" content="([^"]+)"/)?.[1];
+    
+    if (ogImage) {
+      return {
+        id: generateId(),
+        title: ogTitle || 'Pinterest Image',
+        author: { name: 'Pinterest User' },
+        thumbnail: ogImage,
+        media: [{ type: 'image', url: ogImage, format: 'jpg' }],
+        downloadUrl: ogImage,
+        source: 'scraper-fallback'
+      };
+    }
+  } catch (e) {
+    console.error('Scraper fallback failed:', e);
   }
 
-  if (media.length === 0) throw new Error('Media tidak ditemukan di link ini.');
-
-  return {
-    id: generateId(),
-    title: res.title || 'Pinterest Media',
-    author: { name: 'Pinterest User' },
-    thumbnail: res.image || '',
-    media,
-    downloadUrl: media[0].url,
-    source: 'vreden'
-  };
+  throw new Error('Gagal mendapatkan media. Link mungkin private atau semua API sedang down.');
 }
 
 // ============================================
 // CAPCUT - Extractor
 // ============================================
 async function downloadCapCut(url) {
-  const response = await fetch(`https://api.vreden.my.id/api/capcut?url=${encodeURIComponent(url)}`);
-  const data = await response.json();
-
-  if (!data || !data.status || !data.result) {
-    throw new Error('Gagal mendapatkan media dari CapCut.');
-  }
-
-  const res = data.result;
-  const media = [
-    { type: 'video', url: res.video_url, format: 'mp4', quality: 'no-watermark' }
+  const providers = [
+    `https://api.vreden.my.id/api/capcut?url=${encodeURIComponent(url)}`,
+    `https://widipe.com/download/capcut?url=${encodeURIComponent(url)}`,
+    `https://api.tiklydown.eu.org/api/download/capcut?url=${encodeURIComponent(url)}`
   ];
 
-  return {
-    id: generateId(),
-    title: res.title || 'CapCut Video',
-    author: { name: 'CapCut User' },
-    thumbnail: res.thumbnail || '',
-    media,
-    downloadUrl: media[0].url,
-    source: 'vreden'
-  };
+  for (const api of providers) {
+    try {
+      const res = await fetch(api);
+      const data = await res.json();
+      const result = data.result || data.data || data;
+      
+      const video = result.video_url || result.video || result.url_video;
+      
+      if (video) {
+        return {
+          id: generateId(),
+          title: result.title || 'CapCut Video',
+          author: { name: 'CapCut User' },
+          thumbnail: result.thumbnail || '',
+          media: [{ type: 'video', url: video, format: 'mp4', quality: 'no-watermark' }],
+          downloadUrl: video,
+          source: 'api-fallback'
+        };
+      }
+    } catch (e) {
+      console.error(`CapCut provider ${api} failed:`, e.message);
+    }
+  }
+
+  throw new Error('Gagal mendapatkan media dari CapCut. Coba lagi nanti.');
 }
 
 // ============================================
