@@ -99,8 +99,7 @@ export default function TempMail() {
           <Link href="/" className={styles.navLink}>← DOWNLOADER</Link>
           <Link href="/sticker" className={styles.navLink}>STICKER MAKER</Link>
           <span className={styles.navActive}>TEMP MAIL</span>
-          <Link href="/tts" className={styles.navLink}>TTS MAKER</Link>
-          <Link href="/ai-image" className={styles.navLink}>AI IMAGE →</Link>
+          <Link href="/tts" className={styles.navLink}>TTS MAKER →</Link>
         </nav>
 
         <div className={styles.decorations}>

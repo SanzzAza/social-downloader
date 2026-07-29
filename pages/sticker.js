@@ -142,24 +142,7 @@ export default function StickerMaker() {
               boxShadow: '3px 3px 0 #1A1A2E'
             }}
           >
-            TTS MAKER
-          </Link>
-          <Link
-            href="/ai-image"
-            style={{
-              display: 'inline-block',
-              border: '3px solid #1A1A2E',
-              background: '#fff',
-              color: '#1A1A2E',
-              padding: '8px 15px',
-              fontSize: 12,
-              fontWeight: 800,
-              letterSpacing: 1,
-              textDecoration: 'none',
-              boxShadow: '3px 3px 0 #1A1A2E'
-            }}
-          >
-            AI IMAGE →
+            TTS MAKER →
           </Link>
         </div>
 

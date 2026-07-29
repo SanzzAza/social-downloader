@@ -74,7 +74,6 @@ export default function TTSMaker() {
           <Link href="/" className={styles.navLink}>← DOWNLOADER</Link>
           <Link href="/tempmail" className={styles.navLink}>TEMP MAIL</Link>
           <span className={styles.navActive}>TTS MAKER</span>
-          <Link href="/ai-image" className={styles.navLink}>AI IMAGE →</Link>
         </nav>
 
         <div className={styles.decorations}>
