@@ -36,6 +36,9 @@ export default function Home() {
           <Link href="/tts" className={styles.navLink}>
             TTS MAKER →
           </Link>
+          <Link href="/video-maker" className={styles.navLink}>
+            VIDEO MAKER →
+          </Link>
         </nav>
 
         <div className={styles.decorations}>
