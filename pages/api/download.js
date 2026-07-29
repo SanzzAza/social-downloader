@@ -752,39 +752,56 @@ async function downloadYouTube(url) {
 // ============================================
 async function downloadPinterest(url) {
   let targetUrl = url;
+  let pinId = '';
+  
   try {
-    if (url.includes('pin.it')) {
-      const res = await fetch(url, { redirect: 'follow' });
-      targetUrl = res.url;
-    }
+    // 1. Follow redirects and extract Pin ID
+    const res = await fetch(url, { 
+      redirect: 'follow',
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+    });
+    targetUrl = res.url;
+    
+    // Extract ID from patterns like /pin/123456/ or pin/123456
+    const idMatch = targetUrl.match(/pin\/(\d+)/);
+    if (idMatch) pinId = idMatch[1];
   } catch (e) {
-    console.error('Redirect error:', e);
+    console.error('Pinterest redirect error:', e);
   }
 
+  // If we couldn't get a clean ID, try to extract it from the original URL if possible
+  if (!pinId) {
+    const idMatch = url.match(/pin\/(\d+)/);
+    if (idMatch) pinId = idMatch[1];
+  }
+
+  const cleanPinUrl = pinId ? `https://www.pinterest.com/pin/${pinId}/` : targetUrl;
+
   const providers = [
-    `https://widipe.com/pinterest?url=${encodeURIComponent(targetUrl)}`,
-    `https://api.vreden.my.id/api/pinterest?url=${encodeURIComponent(targetUrl)}`,
-    `https://api.tiklydown.eu.org/api/download/pinterest?url=${encodeURIComponent(targetUrl)}`
+    `https://api.vreden.my.id/api/pinterest?url=${encodeURIComponent(cleanPinUrl)}`,
+    `https://widipe.com/pinterest?url=${encodeURIComponent(cleanPinUrl)}`,
+    `https://api.tiklydown.eu.org/api/download/pinterest?url=${encodeURIComponent(cleanPinUrl)}`,
+    `https://api.agatz.xyz/api/pinterest?url=${encodeURIComponent(cleanPinUrl)}`
   ];
 
   for (const api of providers) {
     try {
-      const res = await fetch(api);
+      const res = await fetch(api, { timeout: 5000 });
       const data = await res.json();
-      
-      // Handle various API response formats
       const result = data.result || data.data || data;
-      const media = [];
       
-      const video = result.video || result.video_url || result.url_video;
-      const image = result.image || result.image_url || result.url_image || result.images_orig?.url;
-      
-      if (video) media.push({ type: 'video', url: video, format: 'mp4', quality: 'hd' });
-      if (image) media.push({ type: 'image', url: image, format: 'jpg' });
+      if (!result) continue;
 
-      if (media.length > 0) {
+      const video = result.video || result.video_url || result.url_video;
+      const image = result.image || result.image_url || result.url_image || result.images_orig?.url || result.images?.orig?.url;
+      
+      if (video || image) {
+        const media = [];
+        if (video) media.push({ type: 'video', url: video, format: 'mp4', quality: 'hd' });
+        if (image) media.push({ type: 'image', url: image, format: 'jpg' });
+
         return {
-          id: generateId(),
+          id: pinId || generateId(),
           title: result.title || 'Pinterest Media',
           author: { name: 'Pinterest User' },
           thumbnail: image || '',
@@ -794,35 +811,40 @@ async function downloadPinterest(url) {
         };
       }
     } catch (e) {
-      console.error(`Provider ${api} failed:`, e.message);
+      console.error(`Pinterest provider failed:`, e.message);
     }
   }
 
-  // FINAL FALLBACK: Simple Scraper for images
+  // SCRAPER FALLBACK (More aggressive)
   try {
-    const pageRes = await fetch(targetUrl, { 
+    const pageRes = await fetch(cleanPinUrl, { 
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
     });
     const html = await pageRes.text();
+    
+    // Look for original high-res images in the HTML
+    const originalImageMatch = html.match(/https:\/\/i\.pinimg\.com\/originals\/[a-zA-Z0-9\/._-]+\.(jpg|png|gif|jpeg)/g);
     const ogImage = html.match(/<meta property="og:image" content="([^"]+)"/)?.[1];
     const ogTitle = html.match(/<meta property="og:title" content="([^"]+)"/)?.[1];
     
-    if (ogImage) {
+    const imageToUse = (originalImageMatch && originalImageMatch[0]) || ogImage;
+    
+    if (imageToUse) {
       return {
-        id: generateId(),
+        id: pinId || generateId(),
         title: ogTitle || 'Pinterest Image',
         author: { name: 'Pinterest User' },
-        thumbnail: ogImage,
-        media: [{ type: 'image', url: ogImage, format: 'jpg' }],
-        downloadUrl: ogImage,
+        thumbnail: imageToUse,
+        media: [{ type: 'image', url: imageToUse, format: imageToUse.endsWith('.png') ? 'png' : 'jpg' }],
+        downloadUrl: imageToUse,
         source: 'scraper-fallback'
       };
     }
   } catch (e) {
-    console.error('Scraper fallback failed:', e);
+    console.error('Pinterest scraper failed:', e);
   }
 
-  throw new Error('Gagal mendapatkan media. Link mungkin private atau semua API sedang down.');
+  throw new Error('Gagal mendapatkan media Pinterest. Link mungkin diproteksi atau server sedang sibuk.');
 }
 
 // ============================================
