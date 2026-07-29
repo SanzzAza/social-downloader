@@ -33,6 +33,9 @@ export default function Home() {
           <Link href="/tempmail" className={styles.navLink}>
             TEMP MAIL →
           </Link>
+          <Link href="/tts" className={styles.navLink}>
+            TTS MAKER →
+          </Link>
         </nav>
 
         <div className={styles.decorations}>
