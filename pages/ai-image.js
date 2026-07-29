@@ -129,27 +129,44 @@ export default function AIImageGenerator() {
           </div>
 
           {loading && (
-            <div className={styles.resultPanel} style={{ display: 'block', textAlign: 'center', padding: '40px' }}>
-              <div className={styles.resultTitle}>AI sedang berimajinasi...</div>
-              <div className={styles.resultSub}>Tunggu sekitar 5-10 detik ya mas.</div>
+            <div className={styles.resultPanel} style={{ display: 'block', textAlign: 'center', padding: '60px 20px' }}>
+              <div className={styles.resultTitle}>AI sedang menggambar... 🎨</div>
+              <div className={styles.resultSub}>Ini biasanya makan waktu 5-10 detik. Jangan di-refresh ya!</div>
+              <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center' }}>
+                <div className={styles.decoBox} style={{ animation: 'spin 2s linear infinite' }}></div>
+              </div>
             </div>
           )}
 
-          {resultImage && !loading && (
-            <div className={styles.resultPanel} style={{ display: 'block', borderLeftColor: 'var(--accent)' }}>
+          {resultImage && (
+            <div className={styles.resultPanel} style={{ 
+              display: loading ? 'none' : 'block', 
+              borderLeftColor: 'var(--accent)' 
+            }}>
               <div className={styles.resultHead}>
                 <div className={styles.resultMeta}>
                   <div className={styles.resultTitle}>Gambar Berhasil Dibuat!</div>
-                  <div className={styles.resultSub}>Klik kanan untuk simpan atau gunakan tombol download.</div>
+                  <div className={styles.resultSub}>Prompt: "{prompt}"</div>
                 </div>
               </div>
               
-              <div style={{ margin: '20px 0', border: '3px solid var(--secondary)', background: '#eee', lineHeight: 0 }}>
+              <div style={{ 
+                margin: '20px 0', 
+                border: '3px solid var(--secondary)', 
+                background: '#eee', 
+                lineHeight: 0,
+                position: 'relative',
+                minHeight: '200px'
+              }}>
                 <img 
                   src={resultImage} 
                   alt={prompt} 
                   style={{ width: '100%', height: 'auto', display: 'block' }} 
                   onLoad={() => setLoading(false)}
+                  onError={() => {
+                    setLoading(false);
+                    alert('Gagal memuat gambar. Coba ganti prompt atau rasio.');
+                  }}
                 />
               </div>
 

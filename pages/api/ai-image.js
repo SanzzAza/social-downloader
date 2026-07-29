@@ -12,9 +12,9 @@ export default async function handler(req, res) {
   const w = width || 1024;
   const h = height || 1024;
   const s = seed || Math.floor(Math.random() * 1000000);
-  const m = model || 'flux'; // 'flux' is a high-quality model available on Pollinations
 
-  const imageUrl = `https://pollinations.ai/p/${encodedPrompt}?width=${w}&height=${h}&seed=${s}&model=${m}&nologo=true`;
+  // Updated URL format for pollinations.ai
+  const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${w}&height=${h}&seed=${s}&nologo=true`;
 
   try {
     // We return the URL so the frontend can display it
