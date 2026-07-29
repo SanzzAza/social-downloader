@@ -1,46 +1,50 @@
 export default async function handler(req, res) {
-  const { action, login, id } = req.query;
+  const { action, sid_token, id, seq } = req.query;
 
-  const baseUrl = 'https://inboxkitten.com/api/v1/mail';
+  const baseUrl = 'https://api.guerrillamail.com/ajax.php';
 
   try {
+    let url = `${baseUrl}?`;
+    
     if (action === 'genRandomMailbox') {
-      // InboxKitten doesn't have a generate mailbox API, we just create a random name
-      const randomName = Math.random().toString(36).substring(2, 12);
-      return res.status(200).json([`${randomName}@inboxkitten.com`]);
+      url += 'f=get_email_address';
+    } else if (action === 'getMessages') {
+      url += `f=check_email&seq=${seq || 0}&sid_token=${sid_token}`;
+    } else if (action === 'readMessage') {
+      url += `f=fetch_email&email_id=${id}&sid_token=${sid_token}`;
+    } else {
+      return res.status(400).json({ error: 'Invalid action' });
     }
 
-    if (action === 'getMessages') {
-      const response = await fetch(`${baseUrl}/list?recipient=${login}`);
-      const data = await response.json();
-      
-      // Map InboxKitten format to a simpler format
-      const messages = data.map(item => ({
-        id: item.storage.key,
-        from: item.message.from,
-        subject: item.message.subject,
-        date: new Date(item.message.timestamp).toLocaleString()
+    const response = await fetch(url);
+    const data = await response.json();
+
+    // Simplify the data for our frontend
+    if (action === 'genRandomMailbox') {
+      res.status(200).json({
+        email: data.email_addr,
+        sid_token: data.sid_token
+      });
+    } else if (action === 'getMessages') {
+      const messages = (data.list || []).map(msg => ({
+        id: msg.mail_id,
+        from: msg.mail_from,
+        subject: msg.mail_subject,
+        date: msg.mail_date,
+        excerpt: msg.mail_excerpt
       }));
-
-      return res.status(200).json(messages);
-    }
-
-    if (action === 'readMessage') {
-      const response = await fetch(`${baseUrl}/get?recipient=${login}&mailKey=${id}`);
-      const data = await response.json();
-      
-      return res.status(200).json({
-        htmlBody: data.html,
-        body: data.text,
-        subject: '', // InboxKitten doesn't repeat subject here easily
-        from: '',
-        date: ''
+      res.status(200).json(messages);
+    } else if (action === 'readMessage') {
+      res.status(200).json({
+        htmlBody: data.mail_body,
+        body: data.mail_body.replace(/<[^>]*>?/gm, ''),
+        from: data.mail_from,
+        subject: data.mail_subject,
+        date: data.mail_date
       });
     }
-
-    res.status(400).json({ error: 'Invalid action' });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Failed to fetch from InboxKitten' });
+    res.status(500).json({ error: 'Failed to fetch from GuerrillaMail' });
   }
 }

@@ -5,6 +5,7 @@ import styles from '../styles/Home.module.css';
 
 export default function TempMail() {
   const [email, setEmail] = useState('');
+  const [sidToken, setSidToken] = useState('');
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [activeMessage, setActiveMessage] = useState(null);
@@ -15,8 +16,9 @@ export default function TempMail() {
     try {
       const res = await fetch('/api/tempmail?action=genRandomMailbox');
       const data = await res.json();
-      if (data && data.length > 0) {
-        setEmail(data[0]);
+      if (data && data.email) {
+        setEmail(data.email);
+        setSidToken(data.sid_token);
         setMessages([]);
         setActiveMessage(null);
       }
@@ -28,11 +30,10 @@ export default function TempMail() {
   };
 
   const checkMessages = async () => {
-    if (!email) return;
+    if (!sidToken) return;
     setLoading(true);
-    const [login] = email.split('@');
     try {
-      const res = await fetch(`/api/tempmail?action=getMessages&login=${login}`);
+      const res = await fetch(`/api/tempmail?action=getMessages&sid_token=${sidToken}`);
       const data = await res.json();
       setMessages(data);
     } catch (err) {
@@ -43,13 +44,12 @@ export default function TempMail() {
   };
 
   const readMessage = async (id) => {
-    const [login] = email.split('@');
+    if (!sidToken) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/tempmail?action=readMessage&login=${login}&id=${id}`);
+      const res = await fetch(`/api/tempmail?action=readMessage&sid_token=${sidToken}&id=${id}`);
       const data = await res.json();
-      const meta = messages.find(m => m.id === id);
-      setActiveMessage({ ...data, ...meta });
+      setActiveMessage(data);
     } catch (err) {
       console.error(err);
     } finally {
