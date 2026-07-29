@@ -1,19 +1,46 @@
 export default async function handler(req, res) {
-  const { action, login, domain, id } = req.query;
+  const { action, login, id } = req.query;
 
-  const baseUrl = 'https://www.1secmail.com/api/v1/';
+  const baseUrl = 'https://inboxkitten.com/api/v1/mail';
 
   try {
-    let url = `${baseUrl}?action=${action}`;
-    if (login) url += `&login=${login}`;
-    if (domain) url += `&domain=${domain}`;
-    if (id) url += `&id=${id}`;
+    if (action === 'genRandomMailbox') {
+      // InboxKitten doesn't have a generate mailbox API, we just create a random name
+      const randomName = Math.random().toString(36).substring(2, 12);
+      return res.status(200).json([`${randomName}@inboxkitten.com`]);
+    }
 
-    const response = await fetch(url);
-    const data = await response.json();
+    if (action === 'getMessages') {
+      const response = await fetch(`${baseUrl}/list?recipient=${login}`);
+      const data = await response.json();
+      
+      // Map InboxKitten format to a simpler format
+      const messages = data.map(item => ({
+        id: item.storage.key,
+        from: item.message.from,
+        subject: item.message.subject,
+        date: new Date(item.message.timestamp).toLocaleString()
+      }));
 
-    res.status(200).json(data);
+      return res.status(200).json(messages);
+    }
+
+    if (action === 'readMessage') {
+      const response = await fetch(`${baseUrl}/get?recipient=${login}&mailKey=${id}`);
+      const data = await response.json();
+      
+      return res.status(200).json({
+        htmlBody: data.html,
+        body: data.text,
+        subject: '', // InboxKitten doesn't repeat subject here easily
+        from: '',
+        date: ''
+      });
+    }
+
+    res.status(400).json({ error: 'Invalid action' });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch from 1secmail' });
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch from InboxKitten' });
   }
 }

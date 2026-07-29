@@ -30,9 +30,9 @@ export default function TempMail() {
   const checkMessages = async () => {
     if (!email) return;
     setLoading(true);
-    const [login, domain] = email.split('@');
+    const [login] = email.split('@');
     try {
-      const res = await fetch(`/api/tempmail?action=getMessages&login=${login}&domain=${domain}`);
+      const res = await fetch(`/api/tempmail?action=getMessages&login=${login}`);
       const data = await res.json();
       setMessages(data);
     } catch (err) {
@@ -43,12 +43,13 @@ export default function TempMail() {
   };
 
   const readMessage = async (id) => {
-    const [login, domain] = email.split('@');
+    const [login] = email.split('@');
     setLoading(true);
     try {
-      const res = await fetch(`/api/tempmail?action=readMessage&login=${login}&domain=${domain}&id=${id}`);
+      const res = await fetch(`/api/tempmail?action=readMessage&login=${login}&id=${id}`);
       const data = await res.json();
-      setActiveMessage(data);
+      const meta = messages.find(m => m.id === id);
+      setActiveMessage({ ...data, ...meta });
     } catch (err) {
       console.error(err);
     } finally {
