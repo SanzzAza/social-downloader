@@ -92,24 +92,42 @@ export default function StickerMaker() {
       </Head>
 
       <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-        <Link
-          href="/"
-          style={{
-            display: 'inline-block',
-            marginBottom: 18,
-            border: '3px solid #1A1A2E',
-            background: '#fff',
-            color: '#1A1A2E',
-            padding: '8px 15px',
-            fontSize: 12,
-            fontWeight: 800,
-            letterSpacing: 1,
-            textDecoration: 'none',
-            boxShadow: '3px 3px 0 #1A1A2E'
-          }}
-        >
-          &larr; BALIK KE DOWNLOADER
-        </Link>
+        <div style={{ display: 'flex', gap: '10px', marginBottom: 18 }}>
+          <Link
+            href="/"
+            style={{
+              display: 'inline-block',
+              border: '3px solid #1A1A2E',
+              background: '#fff',
+              color: '#1A1A2E',
+              padding: '8px 15px',
+              fontSize: 12,
+              fontWeight: 800,
+              letterSpacing: 1,
+              textDecoration: 'none',
+              boxShadow: '3px 3px 0 #1A1A2E'
+            }}
+          >
+            &larr; BALIK KE DOWNLOADER
+          </Link>
+          <Link
+            href="/tempmail"
+            style={{
+              display: 'inline-block',
+              border: '3px solid #1A1A2E',
+              background: '#fff',
+              color: '#1A1A2E',
+              padding: '8px 15px',
+              fontSize: 12,
+              fontWeight: 800,
+              letterSpacing: 1,
+              textDecoration: 'none',
+              boxShadow: '3px 3px 0 #1A1A2E'
+            }}
+          >
+            TEMP MAIL →
+          </Link>
+        </div>
 
         <h1 style={{
           fontSize: 34, fontWeight: 900, margin: '0 0 4px',

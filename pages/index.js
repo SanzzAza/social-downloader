@@ -30,6 +30,9 @@ export default function Home() {
           <Link href="/sticker" className={styles.navLink}>
             STICKER MAKER →
           </Link>
+          <Link href="/tempmail" className={styles.navLink}>
+            TEMP MAIL →
+          </Link>
         </nav>
 
         <div className={styles.decorations}>
