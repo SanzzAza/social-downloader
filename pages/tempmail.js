@@ -96,10 +96,10 @@ export default function TempMail() {
         <p className={styles.tagline}>Email sementara gratis untuk menjaga privasi kamu</p>
 
         <nav className={styles.navBar}>
-          <Link href="/" className={styles.navLink}>
-            ← DOWNLOADER
-          </Link>
+          <Link href="/" className={styles.navLink}>← DOWNLOADER</Link>
+          <Link href="/sticker" className={styles.navLink}>STICKER MAKER</Link>
           <span className={styles.navActive}>TEMP MAIL</span>
+          <Link href="/tts" className={styles.navLink}>TTS MAKER →</Link>
         </nav>
 
         <div className={styles.decorations}>

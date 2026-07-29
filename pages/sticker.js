@@ -92,7 +92,7 @@ export default function StickerMaker() {
       </Head>
 
       <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-        <div style={{ display: 'flex', gap: '10px', marginBottom: 18 }}>
+        <div style={{ display: 'flex', gap: '10px', marginBottom: 18, flexWrap: 'wrap' }}>
           <Link
             href="/"
             style={{
@@ -125,7 +125,24 @@ export default function StickerMaker() {
               boxShadow: '3px 3px 0 #1A1A2E'
             }}
           >
-            TEMP MAIL →
+            TEMP MAIL
+          </Link>
+          <Link
+            href="/tts"
+            style={{
+              display: 'inline-block',
+              border: '3px solid #1A1A2E',
+              background: '#fff',
+              color: '#1A1A2E',
+              padding: '8px 15px',
+              fontSize: 12,
+              fontWeight: 800,
+              letterSpacing: 1,
+              textDecoration: 'none',
+              boxShadow: '3px 3px 0 #1A1A2E'
+            }}
+          >
+            TTS MAKER →
           </Link>
         </div>
 
