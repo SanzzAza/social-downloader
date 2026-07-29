@@ -36,6 +36,9 @@ export default function Home() {
           <Link href="/tts" className={styles.navLink}>
             TTS MAKER →
           </Link>
+          <Link href="/ai-image" className={styles.navLink}>
+            AI IMAGE →
+          </Link>
         </nav>
 
         <div className={styles.decorations}>
