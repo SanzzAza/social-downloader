@@ -10,39 +10,26 @@ export default function AIImageGenerator() {
   const [aspectRatio, setAspectRatio] = useState('1:1');
   const [seed, setSeed] = useState(Math.floor(Math.random() * 1000000));
 
-  const generateImage = async (e) => {
+  const generateImage = (e) => {
     e.preventDefault();
     if (!prompt) return;
 
     setLoading(true);
+    setResultImage(null);
+
     // Logic for width/height based on aspect ratio
     let width = 1024, height = 1024;
     if (aspectRatio === '16:9') { width = 1280; height = 720; }
     if (aspectRatio === '9:16') { width = 720; height = 1280; }
 
-    const newSeed = Math.floor(Math.random() * 9999999);
-    setSeed(newSeed);
-    setResultImage(null); // Clear previous image
-
-    try {
-      // Add a slight delay to ensure UI updates
-      setTimeout(async () => {
-        const res = await fetch(`/api/ai-image?prompt=${encodeURIComponent(prompt)}&width=${width}&height=${height}&seed=${newSeed}&t=${Date.now()}`);
-        const data = await res.json();
-        
-        if (data.success) {
-          setResultImage(data.imageUrl);
-        } else {
-          setLoading(false);
-          alert('Gagal: ' + (data.error || 'Terjadi kesalahan'));
-        }
-      }, 100);
-    } catch (err) {
-      console.error(err);
-      alert('Koneksi bermasalah');
-    } finally {
-      setLoading(false);
-    }
+    const newSeed = Math.floor(Math.random() * 99999999);
+    const timestamp = Date.now();
+    
+    // Generate URL directly in frontend to avoid API proxy issues
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${newSeed}&nologo=true&t=${timestamp}`;
+    
+    // Set image and let the browser handle the loading via onLoad
+    setResultImage(imageUrl);
   };
 
   return (
