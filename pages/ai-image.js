@@ -20,18 +20,23 @@ export default function AIImageGenerator() {
     if (aspectRatio === '16:9') { width = 1280; height = 720; }
     if (aspectRatio === '9:16') { width = 720; height = 1280; }
 
-    const newSeed = Math.floor(Math.random() * 1000000);
+    const newSeed = Math.floor(Math.random() * 9999999);
     setSeed(newSeed);
+    setResultImage(null); // Clear previous image
 
     try {
-      const res = await fetch(`/api/ai-image?prompt=${encodeURIComponent(prompt)}&width=${width}&height=${height}&seed=${newSeed}`);
-      const data = await res.json();
-      
-      if (data.success) {
-        setResultImage(data.imageUrl);
-      } else {
-        alert('Gagal: ' + (data.error || 'Terjadi kesalahan'));
-      }
+      // Add a slight delay to ensure UI updates
+      setTimeout(async () => {
+        const res = await fetch(`/api/ai-image?prompt=${encodeURIComponent(prompt)}&width=${width}&height=${height}&seed=${newSeed}&t=${Date.now()}`);
+        const data = await res.json();
+        
+        if (data.success) {
+          setResultImage(data.imageUrl);
+        } else {
+          setLoading(false);
+          alert('Gagal: ' + (data.error || 'Terjadi kesalahan'));
+        }
+      }, 100);
     } catch (err) {
       console.error(err);
       alert('Koneksi bermasalah');
