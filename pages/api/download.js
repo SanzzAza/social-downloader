@@ -12,7 +12,9 @@ const platformPatterns = {
   facebook: /facebook\.com|fb\.watch/i,
   twitter: /twitter\.com|x\.com/i,
   threads: /threads\.net|threads\.com/i,
-  youtube: /youtube\.com|youtu\.be|youtube-nocookie\.com/i
+  youtube: /youtube\.com|youtu\.be|youtube-nocookie\.com/i,
+  pinterest: /pinterest\.com|pin\.it/i,
+  capcut: /capcut\.com/i
 };
 
 function detectPlatform(url) {
@@ -746,6 +748,66 @@ async function downloadYouTube(url) {
 }
 
 // ============================================
+// PINTEREST - Extractor
+// ============================================
+async function downloadPinterest(url) {
+  // Use a third party scraper for Pinterest since it's tricky
+  const response = await fetch(`https://api.tiklydown.eu.org/api/download/pinterest?url=${encodeURIComponent(url)}`);
+  const data = await response.json();
+
+  if (!data || !data.result) {
+    throw new Error('Gagal mendapatkan media dari Pinterest.');
+  }
+
+  const res = data.result;
+  const isVideo = res.type === 'video';
+  
+  const media = [];
+  if (isVideo) {
+    media.push({ type: 'video', url: res.video, format: 'mp4', quality: 'hd' });
+  } else {
+    media.push({ type: 'image', url: res.image, format: 'jpg' });
+  }
+
+  return {
+    id: generateId(),
+    title: res.title || 'Pinterest Media',
+    author: { name: 'Pinterest User' },
+    thumbnail: res.image || '',
+    media,
+    downloadUrl: media[0].url,
+    source: 'tiklydown'
+  };
+}
+
+// ============================================
+// CAPCUT - Extractor
+// ============================================
+async function downloadCapCut(url) {
+  const response = await fetch(`https://api.tiklydown.eu.org/api/download/capcut?url=${encodeURIComponent(url)}`);
+  const data = await response.json();
+
+  if (!data || !data.result) {
+    throw new Error('Gagal mendapatkan media dari CapCut.');
+  }
+
+  const res = data.result;
+  const media = [
+    { type: 'video', url: res.video_url, format: 'mp4', quality: 'no-watermark' }
+  ];
+
+  return {
+    id: generateId(),
+    title: res.title || 'CapCut Video',
+    author: { name: 'CapCut User' },
+    thumbnail: res.thumbnail || '',
+    media,
+    downloadUrl: media[0].url,
+    source: 'tiklydown'
+  };
+}
+
+// ============================================
 // API HANDLER
 // ============================================
 // Waiting on loader.to's conversion can take longer than the default
@@ -784,12 +846,12 @@ export default async function handler(req, res) {
         if (!platform) {
           return res.status(400).json({
             success: false,
-            error: { code: 'UNKNOWN_PLATFORM', message: 'Could not detect platform', supported: ['tiktok', 'instagram', 'facebook', 'twitter', 'threads', 'youtube'] }
+            error: { code: 'UNKNOWN_PLATFORM', message: 'Could not detect platform', supported: ['tiktok', 'instagram', 'facebook', 'twitter', 'threads', 'youtube', 'pinterest', 'capcut'] }
           });
         }
       }
 
-      const supportedPlatforms = ['tiktok', 'instagram', 'facebook', 'twitter', 'threads', 'youtube'];
+      const supportedPlatforms = ['tiktok', 'instagram', 'facebook', 'twitter', 'threads', 'youtube', 'pinterest', 'capcut'];
       if (!supportedPlatforms.includes(platform)) {
         return res.status(400).json({ success: false, error: { code: 'UNSUPPORTED_PLATFORM', message: `Platform "${platform}" not supported` } });
       }
@@ -802,6 +864,8 @@ export default async function handler(req, res) {
         case 'twitter': result = await downloadTwitter(url); break;
         case 'threads': result = await downloadThreads(url); break;
         case 'youtube': result = await downloadYouTube(url); break;
+        case 'pinterest': result = await downloadPinterest(url); break;
+        case 'capcut': result = await downloadCapCut(url); break;
         default: throw new Error('Not supported');
       }
 

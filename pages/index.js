@@ -85,7 +85,7 @@ export default function Home() {
             <div id="resultLinks" className={styles.resultLinks}></div>
           </div>
 
-          <div className={styles.platformStrip}>
+            <div className={styles.platformStrip}>
             <span className={styles.platformStripLabel}>Didukung:</span>
             <span className={styles.platformChip}>TikTok</span>
             <span className={styles.platformChip}>Instagram</span>
@@ -93,6 +93,8 @@ export default function Home() {
             <span className={styles.platformChip}>Twitter/X</span>
             <span className={styles.platformChip}>Threads</span>
             <span className={styles.platformChip}>YouTube</span>
+            <span className={styles.platformChip}>Pinterest</span>
+            <span className={styles.platformChip}>CapCut</span>
           </div>
         </section>
 
@@ -160,12 +162,15 @@ export default function Home() {
           facebook: /facebook[.]com|fb[.]watch/i,
           twitter: /twitter[.]com|x[.]com/i,
           threads: /threads[.]net|threads[.]com/i,
-          youtube: /youtube[.]com|youtu[.]be/i
+          youtube: /youtube[.]com|youtu[.]be/i,
+          pinterest: /pinterest[.]com|pin[.]it/i,
+          capcut: /capcut[.]com/i
         };
 
         const NICE = {
           tiktok: 'TikTok', instagram: 'Instagram', facebook: 'Facebook',
-          twitter: 'Twitter/X', threads: 'Threads', youtube: 'YouTube'
+          twitter: 'Twitter/X', threads: 'Threads', youtube: 'YouTube',
+          pinterest: 'Pinterest', capcut: 'CapCut'
         };
 
         function detectPlatform(url) {
