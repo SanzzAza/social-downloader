@@ -751,23 +751,32 @@ async function downloadYouTube(url) {
 // PINTEREST - Extractor
 // ============================================
 async function downloadPinterest(url) {
-  // Use a third party scraper for Pinterest since it's tricky
-  const response = await fetch(`https://api.tiklydown.eu.org/api/download/pinterest?url=${encodeURIComponent(url)}`);
+  // 1. First, handle potential short URLs by following redirects
+  let targetUrl = url;
+  if (url.includes('pin.it')) {
+    const res = await fetch(url, { redirect: 'follow' });
+    targetUrl = res.url;
+  }
+
+  // 2. Use a different, more stable API provider
+  // Trying a more reliable endpoint or a different public API
+  const response = await fetch(`https://api.vreden.my.id/api/pinterest?url=${encodeURIComponent(targetUrl)}`);
   const data = await response.json();
 
-  if (!data || !data.result) {
-    throw new Error('Gagal mendapatkan media dari Pinterest.');
+  if (!data || !data.status || !data.result) {
+    throw new Error('Gagal mendapatkan media dari Pinterest. API mungkin sedang down.');
   }
 
   const res = data.result;
-  const isVideo = res.type === 'video';
-  
   const media = [];
-  if (isVideo) {
+  
+  if (res.video) {
     media.push({ type: 'video', url: res.video, format: 'mp4', quality: 'hd' });
-  } else {
+  } else if (res.image) {
     media.push({ type: 'image', url: res.image, format: 'jpg' });
   }
+
+  if (media.length === 0) throw new Error('Media tidak ditemukan di link ini.');
 
   return {
     id: generateId(),
@@ -776,7 +785,7 @@ async function downloadPinterest(url) {
     thumbnail: res.image || '',
     media,
     downloadUrl: media[0].url,
-    source: 'tiklydown'
+    source: 'vreden'
   };
 }
 
@@ -784,10 +793,10 @@ async function downloadPinterest(url) {
 // CAPCUT - Extractor
 // ============================================
 async function downloadCapCut(url) {
-  const response = await fetch(`https://api.tiklydown.eu.org/api/download/capcut?url=${encodeURIComponent(url)}`);
+  const response = await fetch(`https://api.vreden.my.id/api/capcut?url=${encodeURIComponent(url)}`);
   const data = await response.json();
 
-  if (!data || !data.result) {
+  if (!data || !data.status || !data.result) {
     throw new Error('Gagal mendapatkan media dari CapCut.');
   }
 
@@ -803,7 +812,7 @@ async function downloadCapCut(url) {
     thumbnail: res.thumbnail || '',
     media,
     downloadUrl: media[0].url,
-    source: 'tiklydown'
+    source: 'vreden'
   };
 }
 
