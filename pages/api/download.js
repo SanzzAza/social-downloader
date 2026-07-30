@@ -23,10 +23,6 @@ function detectPlatform(url) {
   return null;
 }
 
-function isValidUrl(string) {
-  try { new URL(string); return true; } catch (_) { return false; }
-}
-
 function generateId() {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
@@ -65,7 +61,6 @@ async function downloadTikTok(url) {
   const d = result.data || {};
   const author = d.author || {};
   const nowm = [d.play, d.hdplay].map(absoluteTikwmUrl).filter(Boolean);
-  const wm = [absoluteTikwmUrl(d.wmplay)].filter(Boolean);
   const mp3 = [absoluteTikwmUrl(d.music)].filter(Boolean);
   const slides = Array.isArray(d.images) ? d.images.map(absoluteTikwmUrl).filter(Boolean) : [];
   
@@ -86,28 +81,139 @@ async function downloadTikTok(url) {
 }
 
 // ============================================
-// INSTAGRAM - Real Scraper (Simplified)
+// INSTAGRAM - Robust Multi-Provider + Scraper (2026)
 // ============================================
 async function downloadInstagram(url) {
-  const response = await fetch(`https://api.vreden.my.id/api/igdl?url=${encodeURIComponent(url)}`);
-  const data = await response.json();
-  if (!data || !data.result) throw new Error('Instagram media not found');
+  const cleanUrl = url.split('?')[0].replace(/\/$/, '');
 
-  const media = data.result.map(m => ({
-    type: m.url.includes('.mp4') ? 'video' : 'image',
-    url: m.url,
-    format: m.url.includes('.mp4') ? 'mp4' : 'jpg'
-  }));
+  // 1. Try multiple external APIs first (widely used public endpoints)
+  const providers = [
+    `https://widipe.com/igdl?url=${encodeURIComponent(cleanUrl)}`,
+    `https://api.siputzx.my.id/api/d/ig?url=${encodeURIComponent(cleanUrl)}`,
+    `https://api.fgmods.xyz/api/downloader/igdl?apikey=fgmods&url=${encodeURIComponent(cleanUrl)}`,
+    `https://api.popcat.xyz/ig?url=${encodeURIComponent(cleanUrl)}`
+  ];
 
-  return {
-    id: generateId(),
-    title: 'Instagram Media',
-    author: { name: 'Instagram User' },
-    thumbnail: media[0].url,
-    media,
-    downloadUrl: media[0].url,
-    source: 'vreden'
-  };
+  for (const apiUrl of providers) {
+    try {
+      const response = await fetch(apiUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1'
+        },
+        signal: AbortSignal.timeout(8000)
+      });
+
+      if (!response.ok) continue;
+
+      const data = await response.json().catch(() => null);
+      if (!data) continue;
+
+      let resultMedia = [];
+
+      const candidates = [];
+      if (Array.isArray(data.result)) candidates.push(...data.result);
+      if (Array.isArray(data.data)) candidates.push(...data.data);
+      if (Array.isArray(data.medias)) candidates.push(...data.medias);
+      if (data.video) candidates.push({ url: data.video });
+      if (data.image) candidates.push({ url: data.image });
+
+      for (let m of candidates) {
+        const mediaUrl = m.url || m.video_url || m.image_url || m.video || m.image;
+        if (!mediaUrl || typeof mediaUrl !== 'string') continue;
+
+        const isVideo = mediaUrl.includes('.mp4');
+        resultMedia.push({
+          type: isVideo ? 'video' : 'image',
+          url: mediaUrl,
+          format: isVideo ? 'mp4' : 'jpg'
+        });
+      }
+
+      if (resultMedia.length > 0) {
+        const seen = new Set();
+        resultMedia = resultMedia.filter(m => !seen.has(m.url) && seen.add(m.url));
+
+        return {
+          id: generateId(),
+          title: data.title || data.caption || 'Instagram Media',
+          author: { name: data.username || data.author || 'Instagram User' },
+          thumbnail: resultMedia[0].url,
+          media: resultMedia,
+          downloadUrl: resultMedia[0].url,
+          source: 'api-fallback'
+        };
+      }
+    } catch (e) {}
+  }
+
+  // 2. DIRECT HTML SCRAPER FALLBACK
+  try {
+    const pageRes = await fetch(cleanUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Referer': 'https://www.instagram.com/'
+      },
+      redirect: 'follow'
+    });
+
+    const html = await pageRes.text();
+    const $ = cheerio.load(html);
+
+    let media = [];
+
+    // Meta tags
+    const ogVideo = $('meta[property="og:video"]').attr('content');
+    if (ogVideo) media.push({ type: 'video', url: ogVideo, format: 'mp4' });
+
+    const ogImage = $('meta[property="og:image"]').attr('content');
+    if (ogImage && media.length === 0) media.push({ type: 'image', url: ogImage, format: 'jpg' });
+
+    // Scripts for video_url + display_url
+    const scriptContent = $('script').map((i, el) => $(el).html() || '').get().join(' ');
+
+    const vMatch = scriptContent.match(/"video_url":"(https?:\\?\/\\?\/[^"]+\.mp4[^"]*)"/i);
+    if (vMatch) {
+      let v = vMatch[1].replace(/\\u002F/g, '/').replace(/\\\//g, '/').replace(/\\/g, '');
+      if (v.startsWith('//')) v = 'https:' + v;
+      if (!media.some(m => m.url === v)) media.push({ type: 'video', url: v, format: 'mp4' });
+    }
+
+    const imgMatches = scriptContent.match(/"display_url":"(https?:\\?\/\\?\/[^"]+\.(?:jpg|jpeg|png)[^"]*)"/gi) || [];
+    for (let raw of imgMatches) {
+      const im = raw.match(/"display_url":"([^"]+)"/i);
+      if (im) {
+        let iurl = im[1].replace(/\\u002F/g, '/').replace(/\\\//g, '/').replace(/\\/g, '');
+        if (iurl.startsWith('//')) iurl = 'https:' + iurl;
+        if (!media.some(m => m.url === iurl)) media.push({ type: 'image', url: iurl, format: 'jpg' });
+      }
+    }
+
+    // Last resort: CDN images
+    if (media.length === 0) {
+      const imgs = html.match(/https?:\/\/[^"'\s>]+cdninstagram[^"'\s>]*\.(?:jpg|jpeg|png)[^"'\s>]*/gi) || [];
+      const best = imgs.find(i => i.includes('cdninstagram') && !i.includes('150x150'));
+      if (best) media.push({ type: 'image', url: best, format: 'jpg' });
+    }
+
+    if (media.length > 0) {
+      const unique = Array.from(new Map(media.map(m => [m.url, m])).values());
+      const titleEl = $('meta[property="og:title"]').attr('content') || $('title').text() || 'Instagram Media';
+      return {
+        id: generateId(),
+        title: titleEl.replace(' • Instagram', '').trim(),
+        author: { name: 'Instagram User' },
+        thumbnail: unique[0].url,
+        media: unique,
+        downloadUrl: unique[0].url,
+        source: 'direct-scraper'
+      };
+    }
+  } catch (scraperErr) {
+    console.error('[IG Scraper] Failed:', scraperErr.message);
+  }
+
+  throw new Error('Instagram gagal fetch. Pastikan link publik, tidak private, dan coba lagi nanti.');
 }
 
 // ============================================
@@ -222,7 +328,6 @@ async function downloadPinterest(url) {
       const video = result.video || result.video_url || result.url_video;
       const image = result.image || result.image_url || result.url_image || result.images_orig?.url || result.images?.orig?.url;
       
-      // Filter out generic Pinterest placeholder/gradient images
       const isPlaceholder = image && (image.includes('logo') || image.includes('webapp') || image.includes('60x60') || image.includes('236x'));
 
       if ((video || image) && !isPlaceholder) {
@@ -243,7 +348,7 @@ async function downloadPinterest(url) {
     } catch (e) {}
   }
 
-  // FINAL SCRAPER FALLBACK (Hunting for Originals)
+  // FINAL SCRAPER FALLBACK
   try {
     const pageRes = await fetch(cleanPinUrl, { 
       headers: { 
@@ -253,9 +358,7 @@ async function downloadPinterest(url) {
     });
     const html = await pageRes.text();
     
-    // Look for original high-res images directly
     const images = html.match(/https:\/\/i\.pinimg\.com\/[a-zA-Z0-9\/._-]+\.(jpg|png|gif|jpeg)/g) || [];
-    // Only keep originals or very large versions, ignore anything containing "logo", "webapp", or small sizes
     const validImages = images.filter(img => 
       (img.includes('/originals/') || img.includes('/736x/')) && 
       !img.includes('logo') && !img.includes('webapp') && !img.includes('avatar')
