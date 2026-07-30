@@ -80,140 +80,110 @@ async function downloadTikTok(url) {
   };
 }
 
-// ============================================
-// INSTAGRAM - Robust Multi-Provider + Scraper (2026)
-// ============================================
 async function downloadInstagram(url) {
   const cleanUrl = url.split('?')[0].replace(/\/$/, '');
 
-  // 1. Try multiple external APIs first (widely used public endpoints)
+  // 1. Try APIs
   const providers = [
     `https://widipe.com/igdl?url=${encodeURIComponent(cleanUrl)}`,
-    `https://api.siputzx.my.id/api/d/ig?url=${encodeURIComponent(cleanUrl)}`,
-    `https://api.fgmods.xyz/api/downloader/igdl?apikey=fgmods&url=${encodeURIComponent(cleanUrl)}`,
-    `https://api.popcat.xyz/ig?url=${encodeURIComponent(cleanUrl)}`
+    `https://api.siputzx.my.id/api/d/ig?url=${encodeURIComponent(cleanUrl)}`
   ];
 
   for (const apiUrl of providers) {
     try {
-      const response = await fetch(apiUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1'
-        },
-        signal: AbortSignal.timeout(8000)
-      });
-
-      if (!response.ok) continue;
-
-      const data = await response.json().catch(() => null);
+      const res = await fetch(apiUrl, { signal: AbortSignal.timeout(7000) });
+      if (!res.ok) continue;
+      const data = await res.json().catch(() => null);
       if (!data) continue;
 
       let resultMedia = [];
+      const cands = [];
+      if (Array.isArray(data.result)) cands.push(...data.result);
+      if (Array.isArray(data.data)) cands.push(...data.data);
+      if (data.video) cands.push({url: data.video});
+      if (data.image) cands.push({url: data.image});
 
-      const candidates = [];
-      if (Array.isArray(data.result)) candidates.push(...data.result);
-      if (Array.isArray(data.data)) candidates.push(...data.data);
-      if (Array.isArray(data.medias)) candidates.push(...data.medias);
-      if (data.video) candidates.push({ url: data.video });
-      if (data.image) candidates.push({ url: data.image });
-
-      for (let m of candidates) {
-        const mediaUrl = m.url || m.video_url || m.image_url || m.video || m.image;
-        if (!mediaUrl || typeof mediaUrl !== 'string') continue;
-
-        const isVideo = mediaUrl.includes('.mp4');
-        resultMedia.push({
-          type: isVideo ? 'video' : 'image',
-          url: mediaUrl,
-          format: isVideo ? 'mp4' : 'jpg'
-        });
+      for (let m of cands) {
+        const u = m.url || m.video_url || m.video || m.image;
+        if (u && typeof u === 'string') {
+          resultMedia.push({ type: u.includes('.mp4') ? 'video' : 'image', url: u, format: u.includes('.mp4') ? 'mp4' : 'jpg' });
+        }
       }
-
-      if (resultMedia.length > 0) {
+      if (resultMedia.length) {
         const seen = new Set();
         resultMedia = resultMedia.filter(m => !seen.has(m.url) && seen.add(m.url));
-
-        return {
-          id: generateId(),
-          title: data.title || data.caption || 'Instagram Media',
-          author: { name: data.username || data.author || 'Instagram User' },
-          thumbnail: resultMedia[0].url,
-          media: resultMedia,
-          downloadUrl: resultMedia[0].url,
-          source: 'api-fallback'
-        };
+        resultMedia.sort((a,b) => a.type === 'video' ? -1 : 1);
+        return { id: generateId(), title: data.title || 'Instagram Media', author: {name: 'Instagram User'}, thumbnail: resultMedia[0].url, media: resultMedia, downloadUrl: resultMedia[0].url, source: 'api' };
       }
-    } catch (e) {}
+    } catch(e){}
   }
 
-  // 2. DIRECT HTML SCRAPER FALLBACK
+  // 2. VERY STRONG SCRAPER
   try {
-    const pageRes = await fetch(cleanUrl, {
+    const r = await fetch(cleanUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept': 'text/html',
         'Referer': 'https://www.instagram.com/'
-      },
-      redirect: 'follow'
+      }
     });
-
-    const html = await pageRes.text();
+    const html = await r.text();
     const $ = cheerio.load(html);
-
     let media = [];
 
-    // Meta tags
-    const ogVideo = $('meta[property="og:video"]').attr('content');
-    if (ogVideo) media.push({ type: 'video', url: ogVideo, format: 'mp4' });
+    // og:video
+    const ogv = $('meta[property="og:video"]').attr('content');
+    if (ogv) media.push({type:'video', url: ogv, format:'mp4'});
 
-    const ogImage = $('meta[property="og:image"]').attr('content');
-    if (ogImage && media.length === 0) media.push({ type: 'image', url: ogImage, format: 'jpg' });
+    const big = html + '\n' + $('script').map((_,e)=> $(e).html()||'').get().join('\n');
 
-    // Scripts for video_url + display_url
-    const scriptContent = $('script').map((i, el) => $(el).html() || '').get().join(' ');
-
-    const vMatch = scriptContent.match(/"video_url":"(https?:\\?\/\\?\/[^"]+\.mp4[^"]*)"/i);
-    if (vMatch) {
-      let v = vMatch[1].replace(/\\u002F/g, '/').replace(/\\\//g, '/').replace(/\\/g, '');
+    // Find ALL mp4s
+    let mp4s = big.match(/https?:\/\/[^"'\s>]+?\.mp4[^"'\s>]*/gi) || [];
+    for (let raw of mp4s) {
+      let v = raw.replace(/\\u002F/g,'/').replace(/\\/g,'/');
       if (v.startsWith('//')) v = 'https:' + v;
-      if (!media.some(m => m.url === v)) media.push({ type: 'video', url: v, format: 'mp4' });
-    }
-
-    const imgMatches = scriptContent.match(/"display_url":"(https?:\\?\/\\?\/[^"]+\.(?:jpg|jpeg|png)[^"]*)"/gi) || [];
-    for (let raw of imgMatches) {
-      const im = raw.match(/"display_url":"([^"]+)"/i);
-      if (im) {
-        let iurl = im[1].replace(/\\u002F/g, '/').replace(/\\\//g, '/').replace(/\\/g, '');
-        if (iurl.startsWith('//')) iurl = 'https:' + iurl;
-        if (!media.some(m => m.url === iurl)) media.push({ type: 'image', url: iurl, format: 'jpg' });
+      if (v.includes('.mp4') && (v.includes('cdninstagram') || v.includes('fbcdn'))) {
+        if (!media.some(m => m.url === v)) media.push({type:'video', url:v, format:'mp4'});
       }
     }
 
-    // Last resort: CDN images
-    if (media.length === 0) {
-      const imgs = html.match(/https?:\/\/[^"'\s>]+cdninstagram[^"'\s>]*\.(?:jpg|jpeg|png)[^"'\s>]*/gi) || [];
-      const best = imgs.find(i => i.includes('cdninstagram') && !i.includes('150x150'));
-      if (best) media.push({ type: 'image', url: best, format: 'jpg' });
+    // video_versions (best for reels)
+    if (!media.some(m => m.type === 'video')) {
+      const blocks = big.match(/"video_versions"\s*:\s*\[([\s\S]{0,4000}?)\]/g) || [];
+      for (let b of blocks) {
+        const urls = b.match(/https?:[^"]+\.mp4[^"]*/g) || [];
+        for (let u of urls) {
+          let v = u.replace(/\\u002F/g,'/').replace(/\\/g,'/');
+          if (v.startsWith('//')) v = 'https:' + v;
+          if (!media.some(m => m.url === v)) media.push({type:'video', url:v, format:'mp4'});
+        }
+      }
     }
 
-    if (media.length > 0) {
-      const unique = Array.from(new Map(media.map(m => [m.url, m])).values());
-      const titleEl = $('meta[property="og:title"]').attr('content') || $('title').text() || 'Instagram Media';
+    // image fallback only if no video
+    if (!media.some(m => m.type === 'video')) {
+      const ogi = $('meta[property="og:image"]').attr('content');
+      if (ogi) media.push({type:'image', url:ogi, format:'jpg'});
+    }
+
+    if (media.length) {
+      const seen = new Set();
+      let unique = media.filter(m => !seen.has(m.url) && seen.add(m.url));
+      unique.sort((a,b) => a.type === 'video' ? -1 : 1);
+      const title = $('meta[property="og:title"]').attr('content') || 'Instagram Media';
       return {
         id: generateId(),
-        title: titleEl.replace(' • Instagram', '').trim(),
-        author: { name: 'Instagram User' },
+        title: title.replace(' • Instagram', '').trim(),
+        author: {name: 'Instagram User'},
         thumbnail: unique[0].url,
         media: unique,
         downloadUrl: unique[0].url,
-        source: 'direct-scraper'
+        source: 'scraper'
       };
     }
-  } catch (scraperErr) {
-    console.error('[IG Scraper] Failed:', scraperErr.message);
-  }
+  } catch(e) { console.error('[IG]', e.message); }
 
-  throw new Error('Instagram gagal fetch. Pastikan link publik, tidak private, dan coba lagi nanti.');
+  throw new Error('Instagram gagal fetch. Pastikan link public.');
 }
 
 // ============================================
