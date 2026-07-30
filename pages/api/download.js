@@ -83,7 +83,43 @@ async function downloadTikTok(url) {
 async function downloadInstagram(url) {
   const cleanUrl = url.split('?')[0].replace(/\/$/, '');
 
-  // 1. Try APIs
+  // 1. PRIMARY: yt-dlp (best & most reliable in 2026)
+  try {
+    const { exec } = require('child_process');
+    
+    const info = await new Promise((resolve, reject) => {
+      const cmd = `yt-dlp --print "%(title)s|%(thumbnail)s|%(url)s" -f "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best" --no-download "${cleanUrl}" 2>/dev/null`;
+      
+      exec(cmd, { timeout: 35000, maxBuffer: 2*1024*1024 }, (err, stdout) => {
+        if (err || !stdout || stdout.trim() === '') return reject(new Error('yt-dlp no output'));
+        
+        const line = stdout.trim().split('\n').pop();
+        const [title, thumbnail, videoUrl] = line.split('|');
+        
+        if (!videoUrl || !videoUrl.includes('.mp4')) return reject(new Error('no video'));
+        
+        resolve({
+          title: title || 'Instagram Media',
+          thumbnail: thumbnail || '',
+          videoUrl
+        });
+      });
+    });
+
+    return {
+      id: generateId(),
+      title: info.title.replace(' • Instagram', '').trim(),
+      author: { name: 'Instagram User' },
+      thumbnail: info.thumbnail,
+      media: [{ type: 'video', url: info.videoUrl, format: 'mp4', quality: 'HD' }],
+      downloadUrl: info.videoUrl,
+      source: 'yt-dlp'
+    };
+  } catch (e) {
+    console.log('[IG] yt-dlp fallback...');
+  }
+
+  // 2. Fallback APIs
   const providers = [
     `https://widipe.com/igdl?url=${encodeURIComponent(cleanUrl)}`,
     `https://api.siputzx.my.id/api/d/ig?url=${encodeURIComponent(cleanUrl)}`
@@ -101,10 +137,9 @@ async function downloadInstagram(url) {
       if (Array.isArray(data.result)) cands.push(...data.result);
       if (Array.isArray(data.data)) cands.push(...data.data);
       if (data.video) cands.push({url: data.video});
-      if (data.image) cands.push({url: data.image});
 
       for (let m of cands) {
-        const u = m.url || m.video_url || m.video || m.image;
+        const u = m.url || m.video_url || m.video;
         if (u && typeof u === 'string') {
           resultMedia.push({ type: u.includes('.mp4') ? 'video' : 'image', url: u, format: u.includes('.mp4') ? 'mp4' : 'jpg' });
         }
@@ -118,7 +153,7 @@ async function downloadInstagram(url) {
     } catch(e){}
   }
 
-  // 2. VERY STRONG SCRAPER
+  // 3. Last resort scraper
   try {
     const r = await fetch(cleanUrl, {
       headers: {
@@ -131,36 +166,20 @@ async function downloadInstagram(url) {
     const $ = cheerio.load(html);
     let media = [];
 
-    // og:video
     const ogv = $('meta[property="og:video"]').attr('content');
     if (ogv) media.push({type:'video', url: ogv, format:'mp4'});
 
     const big = html + '\n' + $('script').map((_,e)=> $(e).html()||'').get().join('\n');
 
-    // Find ALL mp4s
     let mp4s = big.match(/https?:\/\/[^"'\s>]+?\.mp4[^"'\s>]*/gi) || [];
     for (let raw of mp4s) {
-      let v = raw.replace(/\\u002F/g,'/').replace(/\\/g,'/');
+      let v = raw.replace(/\\u002F/g,'/').replace(/\\\\/g,'/');
       if (v.startsWith('//')) v = 'https:' + v;
       if (v.includes('.mp4') && (v.includes('cdninstagram') || v.includes('fbcdn'))) {
         if (!media.some(m => m.url === v)) media.push({type:'video', url:v, format:'mp4'});
       }
     }
 
-    // video_versions (best for reels)
-    if (!media.some(m => m.type === 'video')) {
-      const blocks = big.match(/"video_versions"\s*:\s*\[([\s\S]{0,4000}?)\]/g) || [];
-      for (let b of blocks) {
-        const urls = b.match(/https?:[^"]+\.mp4[^"]*/g) || [];
-        for (let u of urls) {
-          let v = u.replace(/\\u002F/g,'/').replace(/\\/g,'/');
-          if (v.startsWith('//')) v = 'https:' + v;
-          if (!media.some(m => m.url === v)) media.push({type:'video', url:v, format:'mp4'});
-        }
-      }
-    }
-
-    // image fallback only if no video
     if (!media.some(m => m.type === 'video')) {
       const ogi = $('meta[property="og:image"]').attr('content');
       if (ogi) media.push({type:'image', url:ogi, format:'jpg'});
@@ -170,10 +189,9 @@ async function downloadInstagram(url) {
       const seen = new Set();
       let unique = media.filter(m => !seen.has(m.url) && seen.add(m.url));
       unique.sort((a,b) => a.type === 'video' ? -1 : 1);
-      const title = $('meta[property="og:title"]').attr('content') || 'Instagram Media';
       return {
         id: generateId(),
-        title: title.replace(' • Instagram', '').trim(),
+        title: $('meta[property="og:title"]').attr('content') || 'Instagram Media',
         author: {name: 'Instagram User'},
         thumbnail: unique[0].url,
         media: unique,
@@ -181,10 +199,11 @@ async function downloadInstagram(url) {
         source: 'scraper'
       };
     }
-  } catch(e) { console.error('[IG]', e.message); }
+  } catch(e) {}
 
   throw new Error('Instagram gagal fetch. Pastikan link public.');
 }
+
 
 // ============================================
 // FACEBOOK - Extractor
