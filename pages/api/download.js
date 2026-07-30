@@ -4,6 +4,7 @@
 
 const cheerio = require('cheerio');
 const { rateLimit } = require('../../lib/rateLimit');
+const { downloadInstagramSnapSave } = require('../../lib/snapsave');
 
 const platformPatterns = {
   tiktok: /tiktok\.com|vm\.tiktok\.com/i,
@@ -84,61 +85,35 @@ async function downloadInstagram(url) {
   const cleanUrl = url.split('?')[0].replace(/\/$/, '');
 
   // ==========================================
-  // METHOD 1: yt-dlp (best if available)
+  // METHOD 1: SnapSave (snapsave.app)
   // ==========================================
   try {
-    const { exec } = require('child_process');
-    const info = await new Promise((resolve, reject) => {
-      exec(`yt-dlp --print "%(title)s|%(thumbnail)s|%(url)s" -f "best[height<=1080]" --no-download "${cleanUrl}" 2>/dev/null`, 
-        { timeout: 30000 }, (err, stdout) => {
-        if (err || !stdout) return reject();
-        const [title, thumb, vid] = stdout.trim().split('|');
-        if (vid && vid.includes('.mp4')) resolve({ title, thumbnail: thumb, videoUrl: vid });
-        else reject();
-      });
-    });
-    return {
-      id: generateId(),
-      title: info.title.replace(' • Instagram', '').trim(),
-      author: { name: 'Instagram User' },
-      thumbnail: info.thumbnail,
-      media: [{ type: 'video', url: info.videoUrl, format: 'mp4' }],
-      downloadUrl: info.videoUrl,
-      source: 'yt-dlp'
-    };
+    const snapResult = await downloadInstagramSnapSave(cleanUrl);
+    if (snapResult.success && snapResult.links.length > 0) {
+      const media = snapResult.links.map(l => ({
+        type: l.label.toLowerCase().includes('photo') ? 'image' : 'video',
+        url: l.url,
+        format: l.label.toLowerCase().includes('photo') ? 'jpg' : 'mp4',
+        quality: l.label || 'hd',
+      }));
+
+      // Sort: video dulu
+      media.sort((a, b) => a.type === 'video' ? -1 : 1);
+
+      return {
+        id: generateId(),
+        title: 'Instagram Media',
+        author: { name: 'Instagram User' },
+        thumbnail: snapResult.thumbnail || media[0].url,
+        media,
+        downloadUrl: media[0].url,
+        source: 'snapsave'
+      };
+    }
   } catch (_) {}
 
   // ==========================================
-  // METHOD 2: Multiple public APIs
-  // ==========================================
-  const apis = [
-    `https://widipe.com/igdl?url=${encodeURIComponent(cleanUrl)}`,
-    `https://api.siputzx.my.id/api/d/ig?url=${encodeURIComponent(cleanUrl)}`,
-    `https://snapinsta.io/api/igdl?url=${encodeURIComponent(cleanUrl)}`
-  ];
-
-  for (const api of apis) {
-    try {
-      const res = await fetch(api, { signal: AbortSignal.timeout(8000) });
-      if (!res.ok) continue;
-      const d = await res.json().catch(() => null);
-      if (!d) continue;
-
-      const items = [];
-      const arr = d.result || d.data || d.medias || [];
-      for (let x of (Array.isArray(arr) ? arr : [d])) {
-        const u = x.url || x.video_url || x.video || x.image;
-        if (u) items.push({ type: u.includes('.mp4') ? 'video' : 'image', url: u, format: u.includes('.mp4') ? 'mp4' : 'jpg' });
-      }
-      if (items.length) {
-        items.sort((a,b) => a.type === 'video' ? -1 : 1);
-        return { id: generateId(), title: d.title || 'Instagram Media', author: {name: 'Instagram User'}, thumbnail: items[0].url, media: items, downloadUrl: items[0].url, source: 'api' };
-      }
-    } catch (_) {}
-  }
-
-  // ==========================================
-  // METHOD 3: Strongest pure scraper
+  // METHOD 2: Direct scraper (fallback)
   // ==========================================
   try {
     const resp = await fetch(cleanUrl, {
