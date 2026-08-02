@@ -5,11 +5,10 @@ import styles from '../styles/ChatMockup.module.css';
 
 const CARRIERS = ['Axis', 'Indosat', 'XL', 'Three', 'Smartfren'];
 
+// Referensi yang dipakai hanya memperlihatkan satu bubble fokus.
+// Pesan tambahan tetap dapat diedit, tetapi disembunyikan saat mode blur aktif.
 const STARTER_MESSAGES = [
-  { id: 'm1', text: 'Hai', side: 'incoming', time: '12' },
-  { id: 'm2', text: 'Hai juga, ada apa nih?', side: 'outgoing', time: '12' },
-  { id: 'm3', text: 'Boleh minta bantuannya sebentar?', side: 'incoming', time: '12' },
-  { id: 'm4', text: 'Boleh, kirim aja detailnya ya.', side: 'outgoing', time: '12' }
+  { id: 'm1', text: 'Hai', side: 'incoming', time: '12' }
 ];
 
 const MENU_ITEMS = [
@@ -296,7 +295,7 @@ export default function ChatMockup() {
             <label className={styles.switchLine}>
               <span>
                 <strong>Blur percakapan belakang</strong>
-                <small>Meniru tampilan contoh yang lu kirim.</small>
+                <small>Hanya bubble fokus yang tampil jelas seperti contoh.</small>
               </span>
               <input
                 type="checkbox"
@@ -360,18 +359,22 @@ export default function ChatMockup() {
 
               <div className={styles.chatArea}>
                 <div className={`${styles.backgroundConversation} ${blurBackground ? styles.backgroundBlurred : ''}`}>
-                  <span className={styles.dayChip}>HARI INI</span>
-                  {backgroundMessages.map((message, index) => (
-                    <div
-                      key={message.id}
-                      className={`${styles.backgroundRow} ${message.side === 'outgoing' ? styles.backgroundOutgoing : ''} ${index === 0 ? styles.backgroundTop : ''}`}
-                    >
-                      <span className={`${styles.backgroundBubble} ${message.side === 'outgoing' ? styles.backgroundOutgoingBubble : ''}`}>
-                        {message.text || ' '}
-                        <small>{message.time || hour || '12'}</small>
-                      </span>
-                    </div>
-                  ))}
+                  {!blurBackground && (
+                    <>
+                      <span className={styles.dayChip}>HARI INI</span>
+                      {backgroundMessages.map((message, index) => (
+                        <div
+                          key={message.id}
+                          className={`${styles.backgroundRow} ${message.side === 'outgoing' ? styles.backgroundOutgoing : ''} ${index === 0 ? styles.backgroundTop : ''}`}
+                        >
+                          <span className={`${styles.backgroundBubble} ${message.side === 'outgoing' ? styles.backgroundOutgoingBubble : ''}`}>
+                            {message.text || ' '}
+                            <small>{message.time || hour || '12'}</small>
+                          </span>
+                        </div>
+                      ))}
+                    </>
+                  )}
                 </div>
 
                 {selectedMessage && (
