@@ -600,20 +600,17 @@
   display: flex;
   align-items: center;
   gap: 11px;
-  filter: blur(9px);
-  opacity: 0.83;
+  filter: blur(5px);
+  opacity: 0.68;
 }
 
 .identityAvatar {
-  width: 43px;
-  height: 43px;
+  width: 54px;
+  height: 54px;
   display: block;
   flex: 0 0 auto;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 49% 36%, rgba(251, 255, 255, 0.93) 0 18%, transparent 21%),
-    radial-gradient(ellipse at 50% 86%, rgba(232, 251, 250, 0.9) 0 27%, transparent 30%),
-    linear-gradient(135deg, #acbdc6, #516d88);
+  background: radial-gradient(circle, rgba(234, 243, 247, 0.78) 0 18%, rgba(180, 201, 214, 0.46) 34%, rgba(101, 125, 147, 0.2) 57%, transparent 76%);
 }
 
 .identityText {
@@ -625,16 +622,16 @@
 
 .identityText i {
   display: block;
-  width: 112px;
-  height: 12px;
+  width: 122px;
+  height: 16px;
   border-radius: 999px;
-  background: rgba(232, 245, 247, 0.88);
+  background: linear-gradient(90deg, transparent, rgba(226, 239, 244, 0.68) 22%, rgba(226, 239, 244, 0.68) 78%, transparent);
 }
 
 .identityText i:last-child {
-  width: 68px;
-  height: 8px;
-  opacity: 0.64;
+  width: 74px;
+  height: 10px;
+  opacity: 0.48;
 }
 
 .chatArea {
@@ -642,54 +639,38 @@
   z-index: 1;
   height: calc(100% - 98px);
   overflow: hidden;
-  background:
-    radial-gradient(circle at 88% 14%, rgba(0, 179, 180, 0.22), transparent 24%),
-    radial-gradient(circle at 12% 72%, rgba(33, 45, 94, 0.32), transparent 38%),
-    linear-gradient(26deg, rgba(112, 208, 201, 0.025) 12%, transparent 12.5%, transparent 87%, rgba(112, 208, 201, 0.025) 87.5%),
-    linear-gradient(150deg, rgba(112, 208, 201, 0.025) 12%, transparent 12.5%, transparent 87%, rgba(112, 208, 201, 0.025) 87.5%),
-    #050918;
-  background-size: auto, auto, 21px 35px, 21px 35px, auto;
+  background: linear-gradient(154deg, #06091b 0%, #030614 56%, #02030a 100%);
+}
+
+.chatArea::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  content: '';
+  opacity: 0.92;
+  background: url('/ios-chat-blurred-backdrop.jpg') center / 100% 100% no-repeat;
 }
 
 .backgroundConversation {
   position: absolute;
+  z-index: 1;
   inset: 0;
   padding: 22px 17px;
   transition: filter 180ms ease, opacity 180ms ease;
 }
 
-/* Saat blur aktif, jangan render isi chat lain. Bentuk ini hanya memberi
-   kedalaman seperti screenshot referensi tanpa meninggalkan teks terbaca. */
+/* Saat blur aktif, jangan render isi chat lain. Hanya gradient lembut
+   tanpa teks yang dipakai, supaya hasil export tidak memunculkan bubble kotak. */
+.backgroundBlurred {
+  opacity: 1;
+  transform: none;
+  background: none;
+}
+
 .backgroundBlurred::before,
 .backgroundBlurred::after {
-  position: absolute;
-  display: block;
-  border-radius: 22px;
-  content: '';
-}
-
-.backgroundBlurred::before {
-  top: 18%;
-  right: -7%;
-  width: 64%;
-  height: 76px;
-  background: linear-gradient(105deg, rgba(6, 83, 91, 0.8), rgba(5, 158, 158, 0.65));
-  box-shadow: 2px 178px 0 rgba(4, 101, 105, 0.58), -228px 111px 0 rgba(63, 69, 100, 0.66);
-}
-
-.backgroundBlurred::after {
-  top: 48%;
-  left: -9%;
-  width: 59%;
-  height: 67px;
-  background: linear-gradient(105deg, rgba(57, 58, 88, 0.78), rgba(91, 88, 118, 0.57));
-  box-shadow: 197px 119px 0 rgba(5, 100, 104, 0.55), 24px -221px 0 rgba(53, 61, 94, 0.48);
-}
-
-.backgroundBlurred {
-  filter: blur(11px);
-  opacity: 0.7;
-  transform: scale(1.04);
+  display: none;
+  content: none;
 }
 
 .dayChip {
@@ -796,7 +777,7 @@
   z-index: 3;
   inset: 0;
   border: 0;
-  background: rgba(1, 4, 14, 0.28);
+  background: rgba(1, 4, 14, 0.14);
   backdrop-filter: blur(1px);
   cursor: pointer;
 }
@@ -814,7 +795,7 @@
   justify-content: space-around;
   border: 1px solid rgba(196, 206, 229, 0.12);
   border-radius: 34px;
-  background: linear-gradient(145deg, rgba(70, 76, 102, 0.97), rgba(47, 53, 78, 0.98));
+  background: linear-gradient(145deg, rgba(61, 65, 88, 0.94), rgba(44, 48, 70, 0.96));
   box-shadow: 0 7px 18px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
@@ -846,7 +827,7 @@
   overflow: hidden;
   border: 1px solid rgba(172, 189, 215, 0.18);
   border-radius: 19px;
-  background: linear-gradient(145deg, rgba(55, 68, 85, 0.96), rgba(35, 43, 59, 0.98));
+  background: linear-gradient(145deg, rgba(48, 61, 77, 0.93), rgba(31, 39, 53, 0.95));
   box-shadow: 0 14px 35px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 
@@ -860,7 +841,7 @@
   border: 0;
   border-bottom: 1px solid rgba(231, 239, 247, 0.1);
   color: #f1f5f9;
-  font: 19px Arial, Helvetica, sans-serif;
+  font: 18px Arial, Helvetica, sans-serif;
   text-align: left;
   background: transparent;
   cursor: pointer;
@@ -876,7 +857,7 @@
 
 .contextMenu i {
   color: #c3d1dd;
-  font-size: 28px;
+  font-size: 26px;
   font-style: normal;
   font-weight: 300;
 }
@@ -1047,6 +1028,25 @@
     font-size: 20px;
   }
 }
+
+/* Canonical dimensions for the exported 657×1137 image. These overrides
+   prevent mobile UI breakpoints from making the downloadable menu oversized. */
+.iosScreen .focusBubble > span { font-size: 17px; }
+.iosScreen .reactionPicker {
+  min-height: 58px;
+  padding: 7px 11px;
+}
+.iosScreen .reactionPicker button {
+  width: 39px;
+  height: 40px;
+  font-size: 28px;
+}
+.iosScreen .contextMenu button {
+  min-height: 50px;
+  padding: 0 17px;
+  font-size: 18px;
+}
+.iosScreen .contextMenu i { font-size: 26px; }
 
 @media (prefers-reduced-motion: reduce) {
   .page *,

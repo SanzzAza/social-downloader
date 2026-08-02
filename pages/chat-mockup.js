@@ -132,18 +132,35 @@ export default function ChatMockup() {
 
   async function downloadPng() {
     if (!captureRef.current || isExporting) return;
+    const capture = captureRef.current;
+    const previousWidth = capture.style.width;
+    const previousMaxWidth = capture.style.maxWidth;
+    const previousFlex = capture.style.flex;
+
     setIsExporting(true);
     setNotice('');
 
     try {
       const module = await import('html2canvas');
       const html2canvas = module.default;
-      const canvas = await html2canvas(captureRef.current, {
+
+      // Selalu hasilkan rasio dan resolusi yang sama dengan referensi:
+      // 657 × 1137 px. Di layar HP preview bisa mengecil responsif, namun
+      // file unduhan tidak lagi ikut membesar/mengecil sesuai lebar browser.
+      capture.style.width = '414px';
+      capture.style.maxWidth = 'none';
+      // preview berada di dalam flex container; cegah browser mengecilkan
+      // canvas sebelum html2canvas menghitung ukurannya.
+      capture.style.flex = '0 0 414px';
+
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const canvas = await html2canvas(capture, {
         backgroundColor: '#07101d',
-        scale: 3,
+        scale: 657 / 414,
         useCORS: true,
         logging: false
       });
+
       const link = document.createElement('a');
       link.href = canvas.toDataURL('image/png');
       link.download = `ios-chat-mockup-${Date.now()}.png`;
@@ -153,6 +170,9 @@ export default function ChatMockup() {
       console.error(error);
       setNotice('Export gagal. Coba ulangi sebentar lagi.');
     } finally {
+      capture.style.width = previousWidth;
+      capture.style.maxWidth = previousMaxWidth;
+      capture.style.flex = previousFlex;
       setIsExporting(false);
     }
   }
