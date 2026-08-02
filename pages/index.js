@@ -39,6 +39,9 @@ export default function Home() {
           <Link href="/video-maker" className={styles.navLink}>
             VIDEO MAKER →
           </Link>
+          <Link href="/chat-mockup" className={styles.navLink}>
+            CHAT MOCKUP →
+          </Link>
         </nav>
 
         <div className={styles.decorations}>
