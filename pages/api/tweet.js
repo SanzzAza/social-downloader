@@ -1,7 +1,7 @@
 /**
  * Tweet canvas image proxy.
  *
- * GET  /api/tweet?displayName=Gemini&username=gemini_ai&comment=Hello
+ * GET  /api/tweet?displayName=SanzzXD&username=sanzzxd&comment=Hello
  * POST /api/tweet { displayName, username, comment, avatar, verified, theme }
  *
  * The upstream endpoint returns an image, so this route keeps the provider
@@ -74,8 +74,8 @@ export default async function handler(req, res) {
     });
   }
 
-  const displayName = cleanText(valueFromRequest(req, 'displayName'), 'Gemini', MAX_DISPLAY_NAME);
-  const username = cleanUsername(valueFromRequest(req, 'username'));
+  const displayName = cleanText(valueFromRequest(req, 'displayName'), 'SanzzXD', MAX_DISPLAY_NAME);
+  const username = cleanUsername(valueFromRequest(req, 'username') || 'sanzzxd');
   const comment = cleanText(valueFromRequest(req, 'comment'), 'Hello World!', MAX_COMMENT);
   const avatar = safeAvatar(valueFromRequest(req, 'avatar'));
   const verified = parseBoolean(valueFromRequest(req, 'verified'), true);

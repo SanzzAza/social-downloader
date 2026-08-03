@@ -4,8 +4,8 @@ import Link from 'next/link';
 import styles from '../styles/Tweet.module.css';
 
 const DEFAULTS = {
-  displayName: 'Gemini',
-  username: 'gemini_ai',
+  displayName: 'SanzzXD',
+  username: 'sanzzxd',
   comment: 'Hello World!',
   avatar: 'https://i.ibb.co/1s8T3sY/48f7ce63c7aa.jpg',
   verified: true,
@@ -118,7 +118,7 @@ export default function TweetMaker() {
                 value={form.displayName}
                 onChange={updateField}
                 maxLength={80}
-                placeholder="Gemini"
+                placeholder="SanzzXD"
                 required
               />
             </label>
@@ -132,7 +132,7 @@ export default function TweetMaker() {
                   value={form.username}
                   onChange={updateField}
                   maxLength={50}
-                  placeholder="gemini_ai"
+                  placeholder="sanzzxd"
                   required
                 />
               </div>
