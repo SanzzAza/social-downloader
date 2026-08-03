@@ -62,21 +62,26 @@ function parseBoolean(value) {
   return ['1', 'true', 'yes', 'on'].includes(String(value).toLowerCase());
 }
 
-// FULLY CLEAN OUTPUT — red stripe completely removed
+// FULLY CLEAN OUTPUT — only remove the red stripe (Alamat bar), keep everything else
 async function addMockupWatermark(imageBuffer) {
   const metadata = await sharp(imageBuffer).metadata();
   const width = metadata.width || 850;
   const height = metadata.height || 530;
 
-  // Cover the ENTIRE card with clean background
-  // This completely hides any red stripe from upstream
+  // Only cover the red horizontal stripe on the "Alamat" row
+  // Position and size tuned precisely for the upstream e-KTP canvas
+  const stripeY = Math.round(height * 0.325);
+  const stripeH = Math.round(height * 0.135);
+
+  // Color that matches the real e-KTP card background (light blue-white)
+  // So the red stripe disappears but everything else stays visible
   const cover = Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
     <rect 
       x="0" 
-      y="0" 
+      y="${stripeY}" 
       width="${width}" 
-      height="${height}" 
-      fill="#e0e7f0"
+      height="${stripeH}" 
+      fill="#f0f4f8"
     />
   </svg>`);
 

@@ -78,7 +78,7 @@ export default function EktpMockup() {
 
   function onImageLoad() {
     setIsLoading(false);
-    setNotice('Mockup berhasil dibuat dengan watermark keamanan.');
+    setNotice('Mockup berhasil dibuat (bersih tanpa garis merah).');
   }
 
   function onImageError() {
@@ -131,7 +131,7 @@ export default function EktpMockup() {
           </div>
 
           <p className={styles.disclaimer}>
-            Ini hanya untuk demo UI. Hasil bersih tanpa watermark.
+            Ini hanya untuk demo UI. Garis merah sudah dihilangkan.
             NIK bisa di-custom (hanya untuk demo).
           </p>
 
