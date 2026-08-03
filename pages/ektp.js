@@ -73,7 +73,7 @@ export default function EktpMockup() {
     setIsLoading(true);
     setImageError(false);
     setNotice('');
-    setSubmitted({ ...form, nik: '0000000000000000' });
+    setSubmitted({ ...form });
   }
 
   function onImageLoad() {
@@ -131,14 +131,20 @@ export default function EktpMockup() {
           </div>
 
           <p className={styles.disclaimer}>
-            Ini hanya untuk demo UI. NIK selalu diganti menjadi angka dummy dan hasil
-            selalu diberi watermark <strong>CONTOH / TIDAK BERLAKU</strong>.
+            Ini hanya untuk demo UI. Hasil selalu diberi watermark <strong>CONTOH / TIDAK BERLAKU</strong>.
+            NIK bisa di-custom (hanya untuk demo).
           </p>
 
           <form onSubmit={generate} className={styles.form}>
             <label className={styles.field}>
-              <span>NIK <em>DUMMY SAJA</em></span>
-              <input name="nik" value={DEFAULTS.nik} readOnly />
+              <span>NIK <em>(bebas custom)</em></span>
+              <input 
+                name="nik" 
+                value={form.nik} 
+                onChange={updateField} 
+                maxLength={20}
+                placeholder="16 digit NIK" 
+              />
             </label>
 
             {FIELDS.map(([name, label]) => (

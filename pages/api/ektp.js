@@ -20,6 +20,7 @@ const MAX_PHOTO_URL = 2048;
 const DEFAULTS = {
   provinsi: 'JAWA BARAT',
   kota: 'BANDUNG',
+  nik: '0000000000000000',
   nama: 'John Doe',
   ttl: 'Bandung, 01-01-1990',
   jenis_kelamin: 'Laki-laki',
@@ -68,26 +69,27 @@ function parseBoolean(value) {
 }
 
 function watermarkSvg(width, height) {
-  const diagonalSize = Math.max(24, Math.round(Math.min(width, height) * 0.065));
-  const bannerSize = Math.max(22, Math.round(Math.min(width, height) * 0.045));
-  const diagonalText = 'CONTOH  •  TIDAK BERLAKU';
+  const diagonalSize = Math.max(20, Math.round(Math.min(width, height) * 0.048));
+  const bannerSize = Math.max(18, Math.round(Math.min(width, height) * 0.040));
+  const diagonalText = 'CONTOH • TIDAK BERLAKU';
   const repeated = [];
 
-  for (let y = -height; y < height * 2; y += diagonalSize * 2.4) {
+  // Lighter & less dense red diagonal lines (bug fix: garis merah terlalu tebal & banyak)
+  for (let y = -height * 0.6; y < height * 2.2; y += diagonalSize * 3.6) {
     repeated.push(
-      `<text x="${Math.round(width * 0.08)}" y="${y}" font-size="${diagonalSize}" ` +
-      `font-family="Arial, sans-serif" font-weight="900">${diagonalText}</text>`
+      `<text x="${Math.round(width * 0.04)}" y="${y}" font-size="${diagonalSize}" ` +
+      `font-family="Arial, sans-serif" font-weight="800">${diagonalText}</text>`
     );
   }
 
   return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
-    <g transform="rotate(-25 ${width / 2} ${height / 2})" fill="#b91c1c" opacity="0.32" stroke="#ffffff" stroke-width="2" paint-order="stroke">
+    <g transform="rotate(-23 ${width / 2} ${height / 2})" fill="#b91c1c" opacity="0.15" stroke="#ffffff" stroke-width="1" paint-order="stroke">
       ${repeated.join('')}
     </g>
-    <rect x="0" y="${Math.round(height * 0.42)}" width="${width}" height="${Math.round(height * 0.16)}" fill="#991b1b" opacity="0.86" />
-    <text x="${width / 2}" y="${Math.round(height * 0.52)}" text-anchor="middle" dominant-baseline="middle"
+    <rect x="0" y="${Math.round(height * 0.435)}" width="${width}" height="${Math.round(height * 0.13)}" fill="#b91c1c" opacity="0.72" />
+    <text x="${width / 2}" y="${Math.round(height * 0.50)}" text-anchor="middle" dominant-baseline="middle"
       fill="#ffffff" font-size="${bannerSize}" font-family="Arial, sans-serif" font-weight="900"
-      letter-spacing="2">CONTOH / TIDAK BERLAKU</text>
+      letter-spacing="1.5">CONTOH / TIDAK BERLAKU</text>
   </svg>`;
 }
 
@@ -126,10 +128,8 @@ export default async function handler(req, res) {
     params.set(key, cleanValue(valueFromRequest(req, key), fallback));
   }
 
-  // A mockup must not turn into an identity-document generator. Keep the
-  // identifier synthetic even if a caller sends a real-looking NIK.
-  params.set('nik', '0000000000000000');
   params.set('pas_photo', safePhoto(valueFromRequest(req, 'pas_photo')));
+  // NIK now supports custom value (for demo only)
   const shouldDownload = parseBoolean(valueFromRequest(req, 'download'));
 
   try {
