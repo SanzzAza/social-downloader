@@ -7,21 +7,21 @@ const DEFAULTS = {
   provinsi: 'JAWA BARAT',
   kota: 'BANDUNG',
   nik: '0000000000000000',
-  nama: 'CONTOH DATA',
-  ttl: 'BANDUNG, 01-01-2000',
+  nama: 'John Doe',
+  ttl: 'Bandung, 01-01-1990',
   jenis_kelamin: 'Laki-laki',
   golongan_darah: 'O',
   alamat: 'Jl. Contoh No. 123',
-  'rt/rw': '000/000',
-  'kel/desa': 'Contoh',
-  kecamatan: 'Contoh',
+  'rt/rw': '001/002',
+  'kel/desa': 'Sukajadi',
+  kecamatan: 'Sukajadi',
   agama: 'Islam',
   status: 'Belum Kawin',
   pekerjaan: 'Pegawai Swasta',
   kewarganegaraan: 'WNI',
   masa_berlaku: 'Seumur Hidup',
   terbuat: '01-01-2023',
-  pas_photo: 'https://i.ibb.co/1s8T3sY/48f7ce63c7aa.jpg'
+  pas_photo: 'https://cdn.phototourl.com/free/2026-08-03-0257667d-e703-446e-a81d-ca5f0fa18fe3.png'
 };
 
 const FIELDS = [

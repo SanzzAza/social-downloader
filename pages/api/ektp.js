@@ -13,21 +13,21 @@ const sharp = require('sharp');
 const { rateLimit } = require('../../lib/rateLimit');
 
 const UPSTREAM_URL = 'https://api.siputzx.my.id/api/canvas/ektp';
-const DEFAULT_PHOTO = 'https://i.ibb.co/1s8T3sY/48f7ce63c7aa.jpg';
+const DEFAULT_PHOTO = 'https://cdn.phototourl.com/free/2026-08-03-0257667d-e703-446e-a81d-ca5f0fa18fe3.png';
 const MAX_VALUE = 160;
 const MAX_PHOTO_URL = 2048;
 
 const DEFAULTS = {
   provinsi: 'JAWA BARAT',
   kota: 'BANDUNG',
-  nama: 'CONTOH DATA',
-  ttl: 'BANDUNG, 01-01-2000',
+  nama: 'John Doe',
+  ttl: 'Bandung, 01-01-1990',
   jenis_kelamin: 'Laki-laki',
   golongan_darah: 'O',
   alamat: 'Jl. Contoh No. 123',
-  'rt/rw': '000/000',
-  'kel/desa': 'Contoh',
-  kecamatan: 'Contoh',
+  'rt/rw': '001/002',
+  'kel/desa': 'Sukajadi',
+  kecamatan: 'Sukajadi',
   agama: 'Islam',
   status: 'Belum Kawin',
   pekerjaan: 'Pegawai Swasta',
