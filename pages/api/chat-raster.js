@@ -1,23 +1,28 @@
 const path = require('path');
-const sharp = require('sharp');
+const { createCanvas, GlobalFonts, loadImage } = require('@napi-rs/canvas');
 
 const WIDTH = 657;
 const HEIGHT = 1137;
 const MAX_TEXT = 44;
+const TEMPLATE_PATH = path.join(process.cwd(), 'public', 'ios-chat-real-template.jpg');
+const FONT_PATH = path.join(process.cwd(), 'public', 'fonts', 'Roboto-Variable.ttf');
+
+let fontReady = false;
+
+function ensureFont() {
+  if (fontReady) return;
+  try {
+    GlobalFonts.registerFromPath(FONT_PATH, 'MockRoboto');
+  } catch (error) {
+    console.warn('Raster font registration failed:', error.message);
+  }
+  fontReady = true;
+}
 
 function pick(req, key) {
   const source = req.method === 'POST' ? (req.body || {}) : (req.query || {});
   const value = source[key];
   return Array.isArray(value) ? value[0] : value;
-}
-
-function escapeXml(value) {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
 }
 
 function safeText(value, fallback) {
@@ -30,52 +35,90 @@ function batteryValue(value) {
   return Number.isFinite(parsed) ? Math.max(1, Math.min(100, parsed)) : 65;
 }
 
-function estimateBubbleWidth(text) {
-  // The raster template leaves the menu below the bubble, so a longer
-  // message can grow horizontally without changing the scene composition.
-  const estimated = 35 + text.length * 14.3;
-  return Math.max(108, Math.min(420, estimated));
+function roundRect(ctx, x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + width, y, x + width, y + height, r);
+  ctx.arcTo(x + width, y + height, x, y + height, r);
+  ctx.arcTo(x, y + height, x, y, r);
+  ctx.arcTo(x, y, x + width, y, r);
+  ctx.closePath();
 }
 
-function renderOverlay({ text, carrier, hour, battery }) {
-  const message = escapeXml(safeText(text, 'Hai'));
-  const operator = escapeXml(safeText(carrier, 'Axis').slice(0, 16));
-  const clock = escapeXml(safeText(hour, '12').slice(0, 5));
-  const percent = batteryValue(battery);
+function drawStatusBar(ctx, { carrier, hour, battery }) {
+  // The top area of the supplied raster template is intentionally flat,
+  // which lets us replace only the editable iOS status values.
+  ctx.fillStyle = '#08091d';
+  ctx.fillRect(0, 0, WIDTH, 52);
+
+  ctx.fillStyle = '#f4f8f8';
+  ctx.strokeStyle = '#f4f8f8';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  const bars = [3, 6, 9, 12];
+  bars.forEach((height, index) => {
+    ctx.fillRect(24 + index * 4, 34 - height, 2, height);
+  });
+
+  ctx.font = '600 16px MockRoboto, Arial, sans-serif';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(carrier, 50, 35);
+
+  ctx.textAlign = 'center';
+  ctx.fillText(hour, 328, 35);
+  ctx.textAlign = 'left';
+  ctx.fillText(`${battery}%`, 558, 35);
+
+  ctx.strokeStyle = '#e6efee';
+  ctx.lineWidth = 2;
+  roundRect(ctx, 602, 21, 31, 16, 3);
+  ctx.stroke();
+  ctx.fillStyle = '#efcd44';
+  roundRect(ctx, 605, 24, Math.max(3, Math.round(25 * battery / 100)), 10, 1.5);
+  ctx.fill();
+  ctx.fillStyle = '#e6efee';
+  roundRect(ctx, 634, 26, 3, 6, 1);
+  ctx.fill();
+}
+
+function drawMessage(ctx, text, hour) {
+  ctx.font = '28px MockRoboto, Arial, sans-serif';
+  const textWidth = ctx.measureText(text).width;
   const bubbleX = 19;
   const bubbleY = 479;
-  const bubbleWidth = estimateBubbleWidth(message);
-  const bubbleRight = bubbleX + bubbleWidth;
+  const bubbleWidth = Math.max(108, Math.min(420, textWidth + 28));
+  const bubbleHeight = 70;
 
-  return Buffer.from(`
-    <svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
-      <defs>
-        <linearGradient id="messageBubble" x1="0" y1="0" x2="0.9" y2="1">
-          <stop offset="0" stop-color="#464958"/>
-          <stop offset="1" stop-color="#353744"/>
-        </linearGradient>
-      </defs>
+  const gradient = ctx.createLinearGradient(bubbleX, bubbleY, bubbleX + bubbleWidth, bubbleY + bubbleHeight);
+  gradient.addColorStop(0, '#464958');
+  gradient.addColorStop(1, '#353744');
+  ctx.fillStyle = gradient;
+  roundRect(ctx, bubbleX, bubbleY, bubbleWidth, bubbleHeight, 15);
+  ctx.fill();
 
-      <!-- Repaint the iOS status bar so carrier, clock and battery are editable. -->
-      <rect x="0" y="0" width="657" height="52" fill="#08091d"/>
-      <g fill="#f4f8f8" stroke="#f4f8f8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M24 34h2v-3h-2zm4 0h2v-6h-2zm4 0h2v-9h-2zm4 0h2V22h-2z" stroke="none"/>
-        <text x="50" y="35" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="600" stroke="none">${operator}</text>
-        <text x="328" y="35" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="600" stroke="none">${clock}</text>
-      </g>
-      <g font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="600" fill="#f4f8f8" stroke="none">
-        <text x="558" y="35">${percent}%</text>
-      </g>
-      <rect x="602" y="21" width="31" height="16" rx="3" fill="none" stroke="#e6efee" stroke-width="2"/>
-      <rect x="605" y="24" width="${Math.max(3, Math.round(25 * percent / 100))}" height="10" rx="1.5" fill="${percent <= 20 ? '#efcd44' : '#efcd44'}"/>
-      <rect x="634" y="26" width="3" height="6" rx="1" fill="#e6efee"/>
+  ctx.fillStyle = '#f0f4f7';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(text, bubbleX + 13, bubbleY + 40);
 
-      <!-- Replace the fixed sample message while preserving the raster scene. -->
-      <rect x="${bubbleX}" y="${bubbleY}" width="${bubbleWidth}" height="70" rx="15" fill="url(#messageBubble)"/>
-      <text x="${bubbleX + 13}" y="${bubbleY + 40}" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#f0f4f7" stroke="none">${message}</text>
-      <text x="${bubbleRight - 12}" y="${bubbleY + 59}" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#b7bdca" stroke="none">${clock}</text>
-    </svg>
-  `);
+  ctx.font = '14px MockRoboto, Arial, sans-serif';
+  ctx.fillStyle = '#b7bdca';
+  ctx.textAlign = 'right';
+  ctx.fillText(hour, bubbleX + bubbleWidth - 12, bubbleY + 59);
+  ctx.textAlign = 'left';
+}
+
+async function renderRaster({ text, carrier, hour, battery }) {
+  ensureFont();
+  const image = await loadImage(TEMPLATE_PATH);
+  const canvas = createCanvas(WIDTH, HEIGHT);
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(image, 0, 0, WIDTH, HEIGHT);
+  drawStatusBar(ctx, { carrier, hour, battery });
+  drawMessage(ctx, text, hour);
+  return canvas.toBuffer('image/png');
 }
 
 export default async function handler(req, res) {
@@ -85,19 +128,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    const templatePath = path.join(process.cwd(), 'public', 'ios-chat-real-template.jpg');
-    const overlay = renderOverlay({
-      text: pick(req, 'text'),
-      carrier: pick(req, 'carrier'),
-      hour: pick(req, 'hour'),
-      battery: pick(req, 'battery')
+    const output = await renderRaster({
+      text: safeText(pick(req, 'text'), 'Hai'),
+      carrier: safeText(pick(req, 'carrier'), 'Axis').slice(0, 16),
+      hour: safeText(pick(req, 'hour'), '12').slice(0, 5),
+      battery: batteryValue(pick(req, 'battery'))
     });
-
-    const output = await sharp(templatePath)
-      .resize(WIDTH, HEIGHT, { fit: 'fill' })
-      .composite([{ input: overlay, top: 0, left: 0 }])
-      .png({ compressionLevel: 9 })
-      .toBuffer();
 
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Content-Length', output.length);
