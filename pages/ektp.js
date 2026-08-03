@@ -56,7 +56,6 @@ export default function EktpMockup() {
   const [submitted, setSubmitted] = useState(DEFAULTS);
   const [isLoading, setIsLoading] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const [notice, setNotice] = useState('');
 
   const previewUrl = useMemo(() => buildUrl(submitted), [submitted]);
   const downloadUrl = useMemo(() => buildUrl(submitted, true), [submitted]);
@@ -65,35 +64,31 @@ export default function EktpMockup() {
     const { name, value } = event.target;
     setForm((current) => ({ ...current, [name]: value }));
     setImageError(false);
-    setNotice('');
   }
 
   function generate(event) {
     event.preventDefault();
     setIsLoading(true);
     setImageError(false);
-    setNotice('');
     setSubmitted({ ...form });
   }
 
   function onImageLoad() {
     setIsLoading(false);
-    setNotice('Mockup berhasil dibuat (bersih tanpa garis merah).');
   }
 
   function onImageError() {
     setIsLoading(false);
     setImageError(true);
-    setNotice('Gambar gagal dibuat. Coba ulangi lagi.');
   }
 
   return (
     <div className={styles.page}>
       <Head>
-        <title>e-KTP Mockup Demo | Social Downloader</title>
+        <title>e-KTP Mockup | Social Downloader</title>
         <meta
           name="description"
-          content="Buat mockup e-KTP untuk demo UI dengan watermark CONTOH dan TIDAK BERLAKU."
+          content="Buat mockup e-KTP bertanda CONTOH dan TIDAK BERLAKU."
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#F7F7F7" />
@@ -113,10 +108,10 @@ export default function EktpMockup() {
             <span className={styles.brandIcon}>▣</span>
             <div>
               <p className={styles.eyebrow}>SOCIAL DOWNLOADER / MOCKUP</p>
-              <h1>E-KTP DEMO</h1>
+              <h1>E-KTP MOCKUP</h1>
             </div>
           </div>
-          <span className={styles.badge}>DEMO ONLY</span>
+          <span className={styles.badge}>CONTOH / TIDAK BERLAKU</span>
         </div>
       </header>
 
@@ -129,11 +124,6 @@ export default function EktpMockup() {
               <h2>Data mockup</h2>
             </div>
           </div>
-
-          <p className={styles.disclaimer}>
-            Ini hanya untuk demo UI. Garis merah sudah dihilangkan.
-            NIK bisa di-custom (hanya untuk demo).
-          </p>
 
           <form onSubmit={generate} className={styles.form}>
             <label className={styles.field}>
@@ -194,7 +184,7 @@ export default function EktpMockup() {
             <span className={`${styles.number} ${styles.numberGreen}`}>02</span>
             <div>
               <p className={styles.sectionKicker}>PREVIEW</p>
-              <h2>Hasil demo</h2>
+              <h2>Hasil</h2>
             </div>
           </div>
 
@@ -220,7 +210,6 @@ export default function EktpMockup() {
             <a href={downloadUrl} className={styles.downloadButton}>
               DOWNLOAD PNG <span>↓</span>
             </a>
-            <p>{notice || 'Watermark keamanan selalu ditambahkan.'}</p>
           </div>
         </section>
       </main>

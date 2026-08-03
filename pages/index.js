@@ -49,7 +49,7 @@ export default function Home() {
             BRAT MAKER →
           </Link>
           <Link href="/ektp" className={styles.navLink}>
-            E-KTP DEMO →
+            E-KTP MOCKUP →
           </Link>
         </nav>
 
