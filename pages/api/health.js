@@ -28,6 +28,7 @@ export default function handler(req, res) {
       sticker: 'GET /api/sticker?text=',
       tweet: 'GET /api/tweet?displayName=&username=&comment=',
       brat: 'GET /api/brat?text=&delay=500',
+      ektp: 'GET /api/ektp?nama=&provinsi=&kota=',
       platforms: 'GET /api/platforms'
     }
   });

@@ -48,6 +48,9 @@ export default function Home() {
           <Link href="/brat" className={styles.navLink}>
             BRAT MAKER →
           </Link>
+          <Link href="/ektp" className={styles.navLink}>
+            E-KTP DEMO →
+          </Link>
         </nav>
 
         <div className={styles.decorations}>
