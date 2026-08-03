@@ -916,23 +916,16 @@
   color: #e85a75;
 }
 
-.captureWatermark {
-  position: absolute;
-  z-index: 7;
-  right: 4px;
-  bottom: 4px;
-  padding: 1px 3px;
-  border: 1px solid rgba(231, 247, 247, 0.28);
-  border-radius: 2px;
-  color: rgba(241, 253, 253, 0.54);
-  font-family: 'DM Mono', monospace;
-  font-size: 4px;
+.previewWatermark {
+  margin: 9px 2px 0;
+  color: #d2e6ec;
+  font: 700 9px 'DM Mono', monospace;
   letter-spacing: 0.08em;
-  background: rgba(4, 13, 25, 0.2);
+  text-align: center;
 }
 
 .previewHint {
-  margin: 15px 2px 0;
+  margin: 6px 2px 0;
   color: #94a2be;
   font-size: 11px;
   line-height: 1.5;

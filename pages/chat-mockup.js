@@ -24,12 +24,12 @@ const MENU_ITEMS = [
 // Native emoji differ between Windows, Android and iOS. Bundled Twemoji
 // artwork keeps the exported mockup consistent while staying a simulation.
 const REACTIONS = [
-  { emoji: '👍', asset: '/emoji/thumbsup.svg' },
-  { emoji: '❤️', asset: '/emoji/heart.svg' },
-  { emoji: '😂', asset: '/emoji/joy.svg' },
-  { emoji: '😮', asset: '/emoji/astonished.svg' },
-  { emoji: '😢', asset: '/emoji/cry.svg' },
-  { emoji: '🙏', asset: '/emoji/pray.svg' }
+  { emoji: '👍', asset: '/emoji/thumbsup.png' },
+  { emoji: '❤️', asset: '/emoji/heart.png' },
+  { emoji: '😂', asset: '/emoji/joy.png' },
+  { emoji: '😮', asset: '/emoji/astonished.png' },
+  { emoji: '😢', asset: '/emoji/cry.png' },
+  { emoji: '🙏', asset: '/emoji/pray.png' }
 ];
 
 function newId() {
@@ -484,10 +484,10 @@ export default function ChatMockup() {
                 )}
               </div>
 
-              <span className={styles.captureWatermark}>SIMULASI</span>
             </div>
           </div>
-          <p className={styles.previewHint}>Klik atau tahan bubble fokus untuk membuka menu. Output selalu diberi tanda simulasi.</p>
+          <p className={styles.previewWatermark}>SIMULASI / MOCKUP — label ini tidak ikut masuk ke PNG</p>
+          <p className={styles.previewHint}>Klik atau tahan bubble fokus untuk membuka menu.</p>
         </section>
       </main>
     </div>
