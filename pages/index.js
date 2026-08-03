@@ -45,6 +45,9 @@ export default function Home() {
           <Link href="/tweet" className={styles.navLink}>
             TWEET MAKER →
           </Link>
+          <Link href="/brat" className={styles.navLink}>
+            BRAT MAKER →
+          </Link>
         </nav>
 
         <div className={styles.decorations}>

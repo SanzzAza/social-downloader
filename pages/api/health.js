@@ -27,6 +27,7 @@ export default function handler(req, res) {
       proxy: 'GET /api/proxy?url=',
       sticker: 'GET /api/sticker?text=',
       tweet: 'GET /api/tweet?displayName=&username=&comment=',
+      brat: 'GET /api/brat?text=&delay=500',
       platforms: 'GET /api/platforms'
     }
   });
