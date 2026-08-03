@@ -62,34 +62,11 @@ function parseBoolean(value) {
   return ['1', 'true', 'yes', 'on'].includes(String(value).toLowerCase());
 }
 
-// FULLY CLEAN OUTPUT — remove ONLY the red stripe on the Alamat row
-// FULLY CLEAN OUTPUT — remove ONLY the red stripe on the Alamat row
-// Uses accurate background color matching the real e-KTP card
+// Normalize the upstream image to PNG without drawing an overlay.
+// The previous implementation added a full-width rectangle that appeared
+// as an unwanted white watermark across the e-KTP mockup.
 async function addMockupWatermark(imageBuffer) {
-  const metadata = await sharp(imageBuffer).metadata();
-  const width = metadata.width || 850;
-  const height = metadata.height || 530;
-
-  // Only cover the red horizontal stripe on the "Alamat" row
-  // These values are tuned to the real upstream e-KTP canvas
-  const stripeY = Math.round(height * 0.33);
-  const stripeH = Math.round(height * 0.13);
-
-  // This color is a very close match to the actual light blue background
-  // of the e-KTP card (from the clean upstream image).
-  // The red stripe will disappear while keeping all text visible.
-  const cover = Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-    <rect 
-      x="0" 
-      y="${stripeY}" 
-      width="${width}" 
-      height="${stripeH}" 
-      fill="#e0ebf5"
-    />
-  </svg>`);
-
   return sharp(imageBuffer)
-    .composite([{ input: cover, blend: 'over' }])
     .png()
     .toBuffer();
 }
