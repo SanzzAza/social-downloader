@@ -131,7 +131,7 @@ export default function EktpMockup() {
           </div>
 
           <p className={styles.disclaimer}>
-            Ini hanya untuk demo UI. Hasil selalu diberi watermark <strong>CONTOH / TIDAK BERLAKU</strong>.
+            Ini hanya untuk demo UI. Hasil bersih tanpa watermark.
             NIK bisa di-custom (hanya untuk demo).
           </p>
 

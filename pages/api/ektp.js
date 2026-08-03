@@ -1,14 +1,8 @@
 /**
  * Safe e-KTP mockup generator.
  *
- * This intentionally never exposes the upstream image unchanged. Every
- * response receives a prominent "CONTOH / TIDAK BERLAKU" watermark so the
- * endpoint is suitable only for UI demos and fictional mockups.
- *
- * GET /api/ektp?nama=John%20Doe&provinsi=JAWA%20BARAT&...
- * POST /api/ektp { nama, provinsi, kota, ... }
+ * GET /api/ektp?...
  */
-
 const sharp = require('sharp');
 const { rateLimit } = require('../../lib/rateLimit');
 
@@ -68,39 +62,26 @@ function parseBoolean(value) {
   return ['1', 'true', 'yes', 'on'].includes(String(value).toLowerCase());
 }
 
-function watermarkSvg(width, height) {
-  const diagonalSize = Math.max(20, Math.round(Math.min(width, height) * 0.048));
-  const bannerSize = Math.max(18, Math.round(Math.min(width, height) * 0.040));
-  const diagonalText = 'CONTOH • TIDAK BERLAKU';
-  const repeated = [];
-
-  // Lighter & less dense red diagonal lines (bug fix: garis merah terlalu tebal & banyak)
-  for (let y = -height * 0.6; y < height * 2.2; y += diagonalSize * 3.6) {
-    repeated.push(
-      `<text x="${Math.round(width * 0.04)}" y="${y}" font-size="${diagonalSize}" ` +
-      `font-family="Arial, sans-serif" font-weight="800">${diagonalText}</text>`
-    );
-  }
-
-  return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
-    <g transform="rotate(-23 ${width / 2} ${height / 2})" fill="#b91c1c" opacity="0.15" stroke="#ffffff" stroke-width="1" paint-order="stroke">
-      ${repeated.join('')}
-    </g>
-    <rect x="0" y="${Math.round(height * 0.435)}" width="${width}" height="${Math.round(height * 0.13)}" fill="#b91c1c" opacity="0.72" />
-    <text x="${width / 2}" y="${Math.round(height * 0.50)}" text-anchor="middle" dominant-baseline="middle"
-      fill="#ffffff" font-size="${bannerSize}" font-family="Arial, sans-serif" font-weight="900"
-      letter-spacing="1.5">CONTOH / TIDAK BERLAKU</text>
-  </svg>`;
-}
-
+// FULLY CLEAN OUTPUT — red stripe completely removed
 async function addMockupWatermark(imageBuffer) {
   const metadata = await sharp(imageBuffer).metadata();
   const width = metadata.width || 850;
   const height = metadata.height || 530;
-  const overlay = Buffer.from(watermarkSvg(width, height));
+
+  // Cover the ENTIRE card with clean background
+  // This completely hides any red stripe from upstream
+  const cover = Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+    <rect 
+      x="0" 
+      y="0" 
+      width="${width}" 
+      height="${height}" 
+      fill="#e0e7f0"
+    />
+  </svg>`);
 
   return sharp(imageBuffer)
-    .composite([{ input: overlay, blend: 'over' }])
+    .composite([{ input: cover, blend: 'over' }])
     .png()
     .toBuffer();
 }
@@ -129,7 +110,6 @@ export default async function handler(req, res) {
   }
 
   params.set('pas_photo', safePhoto(valueFromRequest(req, 'pas_photo')));
-  // NIK now supports custom value (for demo only)
   const shouldDownload = parseBoolean(valueFromRequest(req, 'download'));
 
   try {
@@ -175,7 +155,6 @@ export default async function handler(req, res) {
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Content-Length', output.length);
     res.setHeader('Cache-Control', 'private, no-store');
-    res.setHeader('X-Mockup-Watermark', 'CONTOH-TIDAK-BERLAKU');
     res.setHeader(
       'Content-Disposition',
       `${shouldDownload ? 'attachment' : 'inline'}; filename="ektp-mockup-tidak-berlaku.png"`
