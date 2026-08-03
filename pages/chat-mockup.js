@@ -89,7 +89,8 @@ export default function ChatMockup() {
       text: selectedMessage?.text || 'Hai',
       carrier,
       hour: hour || '12',
-      battery: String(batteryValue)
+      battery: String(batteryValue),
+      scale: '2'
     });
     return `/api/chat-raster?${params.toString()}`;
   }, [selectedMessage?.text, carrier, hour, batteryValue]);
@@ -185,7 +186,7 @@ export default function ChatMockup() {
         const link = document.createElement('a');
         const objectUrl = URL.createObjectURL(blob);
         link.href = objectUrl;
-        link.download = `ios-chat-realistic-${Date.now()}.png`;
+        link.download = `ios-chat-realistic-hd-${Date.now()}.png`;
         link.click();
         window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
         setNotice('PNG realistis berhasil diunduh.');
@@ -416,7 +417,7 @@ export default function ChatMockup() {
               <p>02 / LIVE PREVIEW</p>
               <h2>Long-press scene</h2>
             </div>
-            <span>9:16</span>
+            <span>9:16 / HD 2×</span>
           </div>
 
           <div className={styles.previewStage}>

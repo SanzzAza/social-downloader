@@ -3,6 +3,8 @@ const { createCanvas, GlobalFonts, loadImage } = require('@napi-rs/canvas');
 
 const WIDTH = 657;
 const HEIGHT = 1137;
+const DEFAULT_SCALE = 2;
+const MAX_SCALE = 3;
 const MAX_TEXT = 44;
 const TEMPLATE_PATH = path.join(process.cwd(), 'public', 'ios-chat-real-template.jpg');
 const FONT_PATH = path.join(process.cwd(), 'public', 'fonts', 'Roboto-Variable.ttf');
@@ -33,6 +35,11 @@ function safeText(value, fallback) {
 function batteryValue(value) {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? Math.max(1, Math.min(100, parsed)) : 65;
+}
+
+function outputScale(value) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? Math.max(1, Math.min(MAX_SCALE, parsed)) : DEFAULT_SCALE;
 }
 
 function roundRect(ctx, x, y, width, height, radius) {
@@ -110,11 +117,18 @@ function drawMessage(ctx, text, hour) {
   ctx.textAlign = 'left';
 }
 
-async function renderRaster({ text, carrier, hour, battery }) {
+async function renderRaster({ text, carrier, hour, battery, scale }) {
   ensureFont();
   const image = await loadImage(TEMPLATE_PATH);
-  const canvas = createCanvas(WIDTH, HEIGHT);
+  const canvas = createCanvas(WIDTH * scale, HEIGHT * scale);
   const ctx = canvas.getContext('2d');
+
+  // Draw the reference and all editable text at the higher working resolution.
+  // The coordinates in the drawing helpers stay in the 657×1137 reference
+  // coordinate system, so scaling the context keeps the layout unchanged.
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.scale(scale, scale);
   ctx.drawImage(image, 0, 0, WIDTH, HEIGHT);
   drawStatusBar(ctx, { carrier, hour, battery });
   drawMessage(ctx, text, hour);
@@ -132,7 +146,8 @@ export default async function handler(req, res) {
       text: safeText(pick(req, 'text'), 'Hai'),
       carrier: safeText(pick(req, 'carrier'), 'Axis').slice(0, 16),
       hour: safeText(pick(req, 'hour'), '12').slice(0, 5),
-      battery: batteryValue(pick(req, 'battery'))
+      battery: batteryValue(pick(req, 'battery')),
+      scale: outputScale(pick(req, 'scale'))
     });
 
     res.setHeader('Content-Type', 'image/png');
