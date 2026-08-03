@@ -528,6 +528,13 @@
   -webkit-font-smoothing: antialiased;
 }
 
+.rasterScreen {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: fill;
+}
+
 .statusBar {
   position: relative;
   z-index: 2;

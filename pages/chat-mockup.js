@@ -67,6 +67,7 @@ export default function ChatMockup() {
   const [menuOpen, setMenuOpen] = useState(true);
   const [blurBackground, setBlurBackground] = useState(true);
   const [reaction, setReaction] = useState('');
+  const [rasterTemplate, setRasterTemplate] = useState(true);
   const [draft, setDraft] = useState('');
   const [draftSide, setDraftSide] = useState('incoming');
   const [isExporting, setIsExporting] = useState(false);
@@ -83,6 +84,15 @@ export default function ChatMockup() {
     [messages, selectedMessage]
   );
   const batteryValue = clampBattery(battery);
+  const rasterUrl = useMemo(() => {
+    const params = new URLSearchParams({
+      text: selectedMessage?.text || 'Hai',
+      carrier,
+      hour: hour || '12',
+      battery: String(batteryValue)
+    });
+    return `/api/chat-raster?${params.toString()}`;
+  }, [selectedMessage?.text, carrier, hour, batteryValue]);
 
   function updateMessage(id, key, value) {
     setMessages((current) => current.map((message) => (
@@ -168,6 +178,20 @@ export default function ChatMockup() {
     setNotice('');
 
     try {
+      if (rasterTemplate) {
+        const response = await fetch(rasterUrl);
+        if (!response.ok) throw new Error(`Raster API ${response.status}`);
+        const blob = await response.blob();
+        const link = document.createElement('a');
+        const objectUrl = URL.createObjectURL(blob);
+        link.href = objectUrl;
+        link.download = `ios-chat-realistic-${Date.now()}.png`;
+        link.click();
+        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+        setNotice('PNG realistis berhasil diunduh.');
+        return;
+      }
+
       const module = await import('html2canvas');
       const html2canvas = module.default;
 
@@ -341,6 +365,18 @@ export default function ChatMockup() {
             </div>
             <label className={styles.switchLine}>
               <span>
+                <strong>Render realistis iPhone</strong>
+                <small>Gunakan template raster agar hasil tidak terlihat seperti SVG.</small>
+              </span>
+              <input
+                type="checkbox"
+                checked={rasterTemplate}
+                onChange={(event) => setRasterTemplate(event.target.checked)}
+              />
+              <i aria-hidden="true"></i>
+            </label>
+            <label className={styles.switchLine}>
+              <span>
                 <strong>Blur percakapan belakang</strong>
                 <small>Hanya bubble fokus yang tampil jelas seperti contoh.</small>
               </span>
@@ -385,6 +421,10 @@ export default function ChatMockup() {
 
           <div className={styles.previewStage}>
             <div className={styles.iosScreen} ref={captureRef}>
+              {rasterTemplate ? (
+                <img className={styles.rasterScreen} src={rasterUrl} alt="Preview chat iPhone realistis" />
+              ) : (
+                <>
               <div className={styles.statusBar}>
                 <div className={styles.statusCarrier}>
                   <span className={styles.signal} aria-hidden="true">
@@ -483,7 +523,8 @@ export default function ChatMockup() {
                   </>
                 )}
               </div>
-
+                </>
+              )}
             </div>
           </div>
           <p className={styles.previewWatermark}>SIMULASI / MOCKUP — label ini tidak ikut masuk ke PNG</p>
