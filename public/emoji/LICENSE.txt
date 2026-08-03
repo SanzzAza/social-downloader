@@ -1,0 +1,3 @@
+Emoji artwork in this directory is from Twemoji by Twitter, Inc.
+Licensed under CC-BY 4.0: https://creativecommons.org/licenses/by/4.0/
+Source: https://github.com/twitter/twemoji

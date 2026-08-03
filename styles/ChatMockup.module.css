@@ -519,36 +519,35 @@
 .iosScreen {
   position: relative;
   width: min(100%, 414px);
-  aspect-ratio: 0.578 / 1;
+  aspect-ratio: 657 / 1137;
   overflow: hidden;
-  color: #edf6f7;
-  background:
-    radial-gradient(circle at 76% 19%, rgba(19, 120, 126, 0.44), transparent 23%),
-    radial-gradient(circle at 20% 68%, rgba(28, 41, 89, 0.5), transparent 35%),
-    linear-gradient(148deg, #121a41, #050918 55%, #03050d);
+  color: #f2f5f7;
+  background: #08091b;
   box-shadow: 0 0 0 1px rgba(193, 216, 235, 0.21), 0 14px 32px rgba(0, 0, 0, 0.5);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 .statusBar {
   position: relative;
   z-index: 2;
   height: 30px;
-  padding: 8px 13px 3px;
+  padding: 8px 14px 3px;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  color: #f4faf9;
-  font-size: 9px;
-  font-weight: 700;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  color: #f4f8f8;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: -0.08px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.42);
 }
 
 .statusCarrier,
 .statusBattery {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
 }
 
 .statusBattery {
@@ -557,12 +556,28 @@
 
 .statusBar > strong {
   font-size: 10px;
+  font-weight: 600;
 }
 
 .signal {
-  font-size: 12px;
-  letter-spacing: -3px;
+  width: 13px;
+  height: 10px;
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 1px;
 }
+
+.signal i {
+  width: 2px;
+  display: block;
+  border-radius: 1px 1px 0 0;
+  background: currentColor;
+}
+
+.signal i:nth-child(1) { height: 3px; opacity: 0.62; }
+.signal i:nth-child(2) { height: 5px; opacity: 0.76; }
+.signal i:nth-child(3) { height: 7px; opacity: 0.9; }
+.signal i:nth-child(4) { height: 9px; }
 
 .batteryShape {
   width: 23px;
@@ -593,15 +608,16 @@
   position: relative;
   z-index: 1;
   height: 68px;
-  padding: 12px 19%;
+  padding: 10px 19%;
 }
 
 .identityBlur {
   display: flex;
   align-items: center;
   gap: 11px;
-  filter: blur(5px);
-  opacity: 0.68;
+  filter: blur(6px);
+  opacity: 0.7;
+  transform: translateY(-1px);
 }
 
 .identityAvatar {
@@ -639,7 +655,7 @@
   z-index: 1;
   height: calc(100% - 98px);
   overflow: hidden;
-  background: linear-gradient(154deg, #06091b 0%, #030614 56%, #02030a 100%);
+  background: #060719;
 }
 
 .chatArea::before {
@@ -647,7 +663,7 @@
   z-index: 0;
   inset: 0;
   content: '';
-  opacity: 0.92;
+  opacity: 1;
   background: url('/ios-chat-blurred-backdrop.jpg') center / 100% 100% no-repeat;
 }
 
@@ -726,42 +742,53 @@
 .focusBubble {
   position: absolute;
   z-index: 2;
-  top: 34%;
+  top: 33%;
   left: 3.2%;
   max-width: 42%;
-  padding: 9px 9px 7px;
+  padding: 9px 10px 7px;
   border: 0;
   border-radius: 13px;
   border-top-left-radius: 2px;
-  color: #edf6f7;
+  color: #f0f4f7;
   text-align: left;
-  background: linear-gradient(145deg, #4a4d69, #32364f);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.26);
+  background: linear-gradient(145deg, #444654 0%, #353744 100%);
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.04);
   cursor: pointer;
 }
 
 .focusBubble > span {
   font-size: 17px;
+  font-weight: 400;
+  letter-spacing: -0.25px;
   line-height: 1.2;
 }
 
 .focusBubble small {
   float: right;
   margin: 8px 0 -1px 12px;
-  color: rgba(224, 231, 244, 0.56);
+  color: rgba(224, 231, 244, 0.58);
   font-size: 10px;
+  font-weight: 400;
 }
 
-.focusBubble b {
+.selectedReaction {
   position: absolute;
   right: -9px;
   bottom: -10px;
-  padding: 2px 5px;
+  width: 25px;
+  height: 21px;
+  padding: 2px 4px;
+  display: grid;
+  place-items: center;
   border: 1px solid rgba(213, 236, 234, 0.2);
   border-radius: 10px;
-  font-family: 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
-  font-size: 12px;
   background: #263f4b;
+}
+
+.selectedReaction img {
+  width: 17px;
+  height: 17px;
+  object-fit: contain;
 }
 
 .focusOutgoing {
@@ -787,30 +814,37 @@
   z-index: 4;
   top: 23%;
   left: 3.2%;
-  width: 68%;
+  width: 73.5%;
   min-height: 58px;
   padding: 7px 11px;
   display: flex;
   align-items: center;
   justify-content: space-around;
-  border: 1px solid rgba(196, 206, 229, 0.12);
+  border: 1px solid rgba(196, 206, 229, 0.14);
   border-radius: 34px;
-  background: linear-gradient(145deg, rgba(61, 65, 88, 0.94), rgba(44, 48, 70, 0.96));
-  box-shadow: 0 7px 18px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  background: linear-gradient(145deg, rgba(64, 67, 84, 0.97), rgba(43, 47, 65, 0.98));
+  box-shadow: 0 7px 18px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(18px) saturate(1.15);
 }
 
 .reactionPicker button {
   width: 39px;
   height: 40px;
   padding: 0;
+  display: grid;
+  place-items: center;
   border: 0;
   border-radius: 50%;
-  font-family: 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
-  font-size: 28px;
-  line-height: 1;
   background: transparent;
   cursor: pointer;
   transition: transform 130ms ease, background 130ms ease;
+}
+
+.reactionPicker button img {
+  width: 29px;
+  height: 29px;
+  display: block;
+  object-fit: contain;
 }
 
 .reactionPicker button:hover {
@@ -825,10 +859,11 @@
   left: 3.2%;
   width: 68%;
   overflow: hidden;
-  border: 1px solid rgba(172, 189, 215, 0.18);
+  border: 1px solid rgba(172, 189, 215, 0.2);
   border-radius: 19px;
-  background: linear-gradient(145deg, rgba(48, 61, 77, 0.93), rgba(31, 39, 53, 0.95));
-  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  background: linear-gradient(180deg, rgba(62, 70, 86, 0.98), rgba(29, 37, 50, 0.99));
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.52), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px) saturate(1.1);
 }
 
 .contextMenu button {
@@ -841,7 +876,9 @@
   border: 0;
   border-bottom: 1px solid rgba(231, 239, 247, 0.1);
   color: #f1f5f9;
-  font: 18px Arial, Helvetica, sans-serif;
+  font: 18px -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.15px;
   text-align: left;
   background: transparent;
   cursor: pointer;
@@ -856,10 +893,22 @@
 }
 
 .contextMenu i {
-  color: #c3d1dd;
-  font-size: 26px;
+  width: 25px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  color: #cbd5df;
   font-style: normal;
-  font-weight: 300;
+}
+
+.contextMenu i svg {
+  width: 23px;
+  height: 23px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.55;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .contextMenu .dangerItem,

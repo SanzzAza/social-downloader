@@ -12,16 +12,25 @@ const STARTER_MESSAGES = [
 ];
 
 const MENU_ITEMS = [
-  { label: 'Beri Bintang', icon: '☆' },
-  { label: 'Balas', icon: '↩' },
-  { label: 'Teruskan', icon: '↪' },
-  { label: 'Salin', icon: '▣' },
-  { label: 'Ucapkan', icon: '▢' },
-  { label: 'Laporkan', icon: '⚠' },
-  { label: 'Hapus', icon: '⌫', danger: true }
+  { label: 'Beri Bintang', icon: 'star' },
+  { label: 'Balas', icon: 'reply' },
+  { label: 'Teruskan', icon: 'forward' },
+  { label: 'Salin', icon: 'copy' },
+  { label: 'Ucapkan', icon: 'speak' },
+  { label: 'Laporkan', icon: 'report' },
+  { label: 'Hapus', icon: 'delete', danger: true }
 ];
 
-const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+// Native emoji differ between Windows, Android and iOS. Bundled Twemoji
+// artwork keeps the exported mockup consistent while staying a simulation.
+const REACTIONS = [
+  { emoji: '👍', asset: '/emoji/thumbsup.svg' },
+  { emoji: '❤️', asset: '/emoji/heart.svg' },
+  { emoji: '😂', asset: '/emoji/joy.svg' },
+  { emoji: '😮', asset: '/emoji/astonished.svg' },
+  { emoji: '😢', asset: '/emoji/cry.svg' },
+  { emoji: '🙏', asset: '/emoji/pray.svg' }
+];
 
 function newId() {
   return `message-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -29,6 +38,24 @@ function newId() {
 
 function clampBattery(value) {
   return Math.max(1, Math.min(100, Number(value) || 1));
+}
+
+function MenuIcon({ type }) {
+  const paths = {
+    star: <path d="m12 3.6 2.62 5.3 5.85.85-4.23 4.12 1 5.82L12 16.94l-5.24 2.75 1-5.82-4.23-4.12 5.85-.85L12 3.6Z" />,
+    reply: <path d="M9.8 8.2H19a3 3 0 0 1 3 3v1.2a3 3 0 0 1-3 3h-5.2M9.8 8.2 13 5m-3.2 3.2L13 11.4" />,
+    forward: <path d="M14.2 8.2H5a3 3 0 0 0-3 3v1.2a3 3 0 0 0 3 3h5.2m4-7.2L11 5m3.2 3.2L11 11.4" />,
+    copy: <path d="M8 8V5.7A2.7 2.7 0 0 1 10.7 3h6.6A2.7 2.7 0 0 1 20 5.7v6.6a2.7 2.7 0 0 1-2.7 2.7H15M6.7 8h6.6A2.7 2.7 0 0 1 16 10.7v6.6a2.7 2.7 0 0 1-2.7 2.7H6.7A2.7 2.7 0 0 1 4 17.3v-6.6A2.7 2.7 0 0 1 6.7 8Z" />,
+    speak: <path d="M5 5.2h14a2 2 0 0 1 2 2v7.1a2 2 0 0 1-2 2h-8l-4.7 3v-3H5a2 2 0 0 1-2-2V7.2a2 2 0 0 1 2-2Z" />,
+    report: <path d="m12 3.3 9 16H3l9-16Zm0 5.2v5.1m0 3.3h.01" />,
+    delete: <path d="M5.5 7.3h13m-9.5 3.1v5.3m5-5.3v5.3M8 7.3l.7-2h6.6l.7 2m-9.8 0 .8 12.2h9.9l.8-12.2" />
+  };
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      {paths[type]}
+    </svg>
+  );
 }
 
 export default function ChatMockup() {
@@ -360,7 +387,9 @@ export default function ChatMockup() {
             <div className={styles.iosScreen} ref={captureRef}>
               <div className={styles.statusBar}>
                 <div className={styles.statusCarrier}>
-                  <span className={styles.signal} aria-hidden="true">▂▄▆</span>
+                  <span className={styles.signal} aria-hidden="true">
+                    <i></i><i></i><i></i><i></i>
+                  </span>
                   <span>{carrier}</span>
                 </div>
                 <strong>{hour || '12'}</strong>
@@ -410,7 +439,11 @@ export default function ChatMockup() {
                   >
                     <span>{selectedMessage.text || ' '}</span>
                     <small>{selectedMessage.time || hour || '12'}</small>
-                    {reaction && <b>{reaction}</b>}
+                    {reaction && (
+                      <b className={styles.selectedReaction}>
+                        <img src={reaction.asset} alt={reaction.emoji} />
+                      </b>
+                    )}
                   </button>
                 )}
 
@@ -424,7 +457,14 @@ export default function ChatMockup() {
                     />
                     <div className={styles.reactionPicker}>
                       {REACTIONS.map((item) => (
-                        <button type="button" onClick={() => pickReaction(item)} key={item}>{item}</button>
+                        <button
+                          type="button"
+                          onClick={() => pickReaction(item)}
+                          key={item.emoji}
+                          aria-label={`Reaction ${item.emoji}`}
+                        >
+                          <img src={item.asset} alt="" />
+                        </button>
                       ))}
                     </div>
                     <div className={styles.contextMenu}>
@@ -436,7 +476,7 @@ export default function ChatMockup() {
                           onClick={() => chooseAction(item)}
                         >
                           <span>{item.label}</span>
-                          <i aria-hidden="true">{item.icon}</i>
+                          <i aria-hidden="true"><MenuIcon type={item.icon} /></i>
                         </button>
                       ))}
                     </div>
