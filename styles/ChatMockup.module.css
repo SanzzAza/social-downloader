@@ -805,7 +805,6 @@
   inset: 0;
   border: 0;
   background: rgba(1, 4, 14, 0.14);
-  backdrop-filter: blur(1px);
   cursor: pointer;
 }
 
@@ -822,9 +821,8 @@
   justify-content: space-around;
   border: 1px solid rgba(196, 206, 229, 0.14);
   border-radius: 34px;
-  background: linear-gradient(145deg, rgba(64, 67, 84, 0.97), rgba(43, 47, 65, 0.98));
+  background: linear-gradient(145deg, rgba(64, 67, 84, 0.99), rgba(43, 47, 65, 0.99));
   box-shadow: 0 7px 18px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.07);
-  backdrop-filter: blur(18px) saturate(1.15);
 }
 
 .reactionPicker button {
@@ -861,9 +859,8 @@
   overflow: hidden;
   border: 1px solid rgba(172, 189, 215, 0.2);
   border-radius: 19px;
-  background: linear-gradient(180deg, rgba(62, 70, 86, 0.98), rgba(29, 37, 50, 0.99));
+  background: linear-gradient(180deg, rgba(62, 70, 86, 1), rgba(29, 37, 50, 1));
   box-shadow: 0 14px 35px rgba(0, 0, 0, 0.52), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(18px) saturate(1.1);
 }
 
 .contextMenu button {
