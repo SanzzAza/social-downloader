@@ -42,6 +42,9 @@ export default function Home() {
           <Link href="/chat-mockup" className={styles.navLink}>
             CHAT MOCKUP →
           </Link>
+          <Link href="/tweet" className={styles.navLink}>
+            TWEET MAKER →
+          </Link>
         </nav>
 
         <div className={styles.decorations}>

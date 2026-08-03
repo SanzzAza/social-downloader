@@ -26,6 +26,7 @@ export default function handler(req, res) {
       download: 'POST /api/download',
       proxy: 'GET /api/proxy?url=',
       sticker: 'GET /api/sticker?text=',
+      tweet: 'GET /api/tweet?displayName=&username=&comment=',
       platforms: 'GET /api/platforms'
     }
   });
