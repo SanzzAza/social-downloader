@@ -935,10 +935,14 @@
     max-width: 650px;
   }
 
+  .editor {
+    order: 1;
+  }
+
   .previewColumn {
     position: relative;
     top: 0;
-    order: -1;
+    order: 2;
   }
 }
 
