@@ -1106,3 +1106,333 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Neo-brutalist editor shell
+   The iPhone canvas stays dark and realistic; only the surrounding tool UI
+   follows the visual language used by the rest of the project.
+   -------------------------------------------------------------------------- */
+:global(body) .page {
+  width: calc(100% + 16px);
+  margin: -8px;
+}
+
+.page {
+  --neo-ink: #1a1a2e;
+  --neo-bg: #f7f7f7;
+  --neo-surface: #ffffff;
+  --neo-orange: #ff6b35;
+  --neo-mint: #16c79a;
+  --neo-yellow: #ffd93d;
+  --neo-muted: #4a4a68;
+  min-height: 100vh;
+  color: var(--neo-ink);
+  background: var(--neo-bg);
+  font-family: 'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif;
+}
+
+.page::before {
+  opacity: 0.58;
+  background-image:
+    linear-gradient(rgba(26, 26, 46, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(26, 26, 46, 0.07) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: none;
+}
+
+.appHeader {
+  min-height: 76px;
+  padding: 17px clamp(16px, 5vw, 72px);
+  border-bottom: 3px solid var(--neo-ink);
+  background: var(--neo-surface);
+  box-shadow: 0 4px 0 var(--neo-ink);
+  backdrop-filter: none;
+}
+
+.backLink {
+  padding: 9px 12px;
+  border: 3px solid var(--neo-ink);
+  border-radius: 0;
+  color: var(--neo-ink);
+  font-family: 'Space Mono', 'Courier New', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--neo-mint);
+  box-shadow: 4px 4px 0 var(--neo-ink);
+}
+
+.backLink:hover {
+  transform: translate(2px, 2px);
+  border-color: var(--neo-ink);
+  background: var(--neo-yellow);
+  box-shadow: 2px 2px 0 var(--neo-ink);
+}
+
+.appTitle {
+  color: var(--neo-ink);
+  font-family: 'Space Mono', 'Courier New', monospace;
+  font-weight: 700;
+}
+
+.appTitle span {
+  color: var(--neo-orange);
+  text-shadow: none;
+}
+
+.mockupBadge {
+  padding: 7px 9px;
+  border: 3px solid var(--neo-ink);
+  border-radius: 0;
+  color: var(--neo-ink);
+  font-family: 'Space Mono', 'Courier New', monospace;
+  font-weight: 700;
+  background: var(--neo-yellow);
+  box-shadow: 3px 3px 0 var(--neo-ink);
+}
+
+.workspace {
+  width: min(1240px, calc(100% - 48px));
+  padding: 48px 0 78px;
+  gap: clamp(28px, 5vw, 58px);
+}
+
+.editor,
+.previewColumn {
+  border: 3px solid var(--neo-ink);
+  border-radius: 0;
+  background: var(--neo-surface);
+  box-shadow: 8px 8px 0 var(--neo-ink);
+  backdrop-filter: none;
+}
+
+.editorHeading {
+  padding: 28px 29px 25px;
+  border-bottom: 3px solid var(--neo-ink);
+  background: var(--neo-yellow);
+}
+
+.editorHeading p,
+.previewHeading p {
+  color: var(--neo-ink);
+  font-family: 'Space Mono', 'Courier New', monospace;
+  font-weight: 700;
+}
+
+.editorHeading h1,
+.previewHeading h2 {
+  color: var(--neo-ink);
+  font-family: 'Space Mono', 'Courier New', monospace;
+  font-weight: 700;
+  letter-spacing: -0.06em;
+}
+
+.editorHeading > span {
+  color: var(--neo-muted);
+  font-weight: 500;
+}
+
+.editorSection {
+  padding: 22px 29px;
+  border-bottom: 3px solid var(--neo-ink);
+  background: var(--neo-surface);
+}
+
+.sectionTitle > span {
+  color: var(--neo-ink);
+  font-family: 'Space Mono', 'Courier New', monospace;
+  font-weight: 700;
+}
+
+.sectionTitle small,
+.previewHint {
+  color: var(--neo-muted);
+}
+
+.field > span {
+  color: var(--neo-ink);
+  font-family: 'Space Mono', 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.field select,
+.field input,
+.messageCard textarea,
+.messageMetaControls select,
+.messageMetaControls input,
+.addMessage textarea,
+.addMessage select {
+  border: 3px solid var(--neo-ink);
+  border-radius: 0;
+  color: var(--neo-ink);
+  background: var(--neo-bg);
+  box-shadow: 3px 3px 0 var(--neo-ink);
+}
+
+.field input:focus,
+.field select:focus,
+.messageCard textarea:focus,
+.messageMetaControls input:focus,
+.messageMetaControls select:focus,
+.addMessage textarea:focus,
+.addMessage select:focus {
+  border-color: var(--neo-ink);
+  background: #ffffff;
+  box-shadow: 5px 5px 0 var(--neo-mint);
+}
+
+.messageCard {
+  padding: 12px;
+  border: 3px solid var(--neo-ink);
+  border-radius: 0;
+  background: var(--neo-bg);
+  box-shadow: 4px 4px 0 var(--neo-ink);
+}
+
+.focusedCard {
+  border-color: var(--neo-ink);
+  background: #eafff8;
+  box-shadow: 4px 4px 0 var(--neo-ink);
+}
+
+.messageCardHead > span {
+  color: var(--neo-orange);
+  font-family: 'Space Mono', 'Courier New', monospace;
+  font-weight: 700;
+}
+
+.messageCardHead button {
+  min-height: 25px;
+  border: 2px solid var(--neo-ink);
+  border-radius: 0;
+  color: var(--neo-ink);
+  background: var(--neo-yellow);
+  box-shadow: 2px 2px 0 var(--neo-ink);
+}
+
+.messageCardHead button:last-child {
+  border-color: var(--neo-ink);
+  color: var(--neo-ink);
+  background: var(--neo-orange);
+}
+
+.messageMetaControls select,
+.messageMetaControls input {
+  box-shadow: 2px 2px 0 var(--neo-ink);
+}
+
+.addMessage {
+  margin-top: 15px;
+  padding: 12px;
+  border: 3px dashed var(--neo-ink);
+  border-radius: 0;
+  background: #fff3b2;
+}
+
+.addMessage button {
+  height: 34px;
+  border: 3px solid var(--neo-ink);
+  border-radius: 0;
+  color: var(--neo-ink);
+  background: var(--neo-mint);
+  box-shadow: 3px 3px 0 var(--neo-ink);
+}
+
+.generateButton,
+.exportButton {
+  width: calc(100% - 58px);
+  min-height: 53px;
+  border: 3px solid var(--neo-ink);
+  border-radius: 0;
+  color: var(--neo-ink);
+  font-family: 'Space Mono', 'Courier New', monospace;
+  font-weight: 700;
+  box-shadow: 5px 5px 0 var(--neo-ink);
+}
+
+.generateButton {
+  background: var(--neo-orange);
+}
+
+.exportButton {
+  border-color: var(--neo-ink);
+  color: var(--neo-ink);
+  background: var(--neo-mint);
+}
+
+.generateButton:hover,
+.exportButton:hover:not(:disabled) {
+  transform: translate(3px, 3px);
+  filter: none;
+  box-shadow: 2px 2px 0 var(--neo-ink);
+}
+
+.notice {
+  color: var(--neo-ink);
+  font-family: 'Space Mono', 'Courier New', monospace;
+  font-weight: 700;
+}
+
+.previewColumn {
+  padding: 25px;
+}
+
+.previewHeading > span {
+  padding: 7px 9px;
+  border: 3px solid var(--neo-ink);
+  border-radius: 0;
+  color: var(--neo-ink);
+  font-family: 'Space Mono', 'Courier New', monospace;
+  font-weight: 700;
+  background: var(--neo-mint);
+  box-shadow: 3px 3px 0 var(--neo-ink);
+}
+
+.previewStage {
+  padding: 14px;
+  border: 3px solid var(--neo-ink);
+  border-radius: 0;
+  background: var(--neo-yellow);
+  box-shadow: 5px 5px 0 var(--neo-ink);
+}
+
+.previewWatermark {
+  width: max-content;
+  max-width: 100%;
+  margin-right: auto;
+  margin-left: auto;
+  padding: 4px 6px;
+  border: 2px solid var(--neo-ink);
+  color: var(--neo-ink);
+  font-family: 'Space Mono', 'Courier New', monospace;
+  font-weight: 700;
+  background: var(--neo-yellow);
+  box-shadow: 2px 2px 0 var(--neo-ink);
+}
+
+@media (max-width: 550px) {
+  .appHeader {
+    min-height: 64px;
+    padding: 12px 14px;
+  }
+
+  .workspace {
+    width: calc(100% - 32px);
+    padding-top: 30px;
+  }
+
+  .editor,
+  .previewColumn {
+    box-shadow: 5px 5px 0 var(--neo-ink);
+  }
+
+  .previewColumn {
+    padding: 15px 12px;
+  }
+
+  .previewStage {
+    padding: 9px;
+    box-shadow: 4px 4px 0 var(--neo-ink);
+  }
+}

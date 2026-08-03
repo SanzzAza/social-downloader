@@ -65,9 +65,9 @@ export default function ChatMockup() {
   const [messages, setMessages] = useState(STARTER_MESSAGES);
   const [selectedId, setSelectedId] = useState('m1');
   const [menuOpen, setMenuOpen] = useState(true);
-  const [blurBackground, setBlurBackground] = useState(true);
+  const blurBackground = true;
   const [reaction, setReaction] = useState('');
-  const [rasterTemplate, setRasterTemplate] = useState(true);
+  const rasterTemplate = true;
   const [draft, setDraft] = useState('');
   const [draftSide, setDraftSide] = useState('incoming');
   const [isExporting, setIsExporting] = useState(false);
@@ -357,49 +357,6 @@ export default function ChatMockup() {
                 <button type="submit">+ TAMBAH</button>
               </div>
             </form>
-          </section>
-
-          <section className={styles.editorSection}>
-            <div className={styles.sectionTitle}>
-              <span>TAMPILAN</span>
-              <small>Preview</small>
-            </div>
-            <label className={styles.switchLine}>
-              <span>
-                <strong>Render realistis iPhone</strong>
-                <small>Gunakan template raster agar hasil tidak terlihat seperti SVG.</small>
-              </span>
-              <input
-                type="checkbox"
-                checked={rasterTemplate}
-                onChange={(event) => setRasterTemplate(event.target.checked)}
-              />
-              <i aria-hidden="true"></i>
-            </label>
-            <label className={styles.switchLine}>
-              <span>
-                <strong>Blur percakapan belakang</strong>
-                <small>Hanya bubble fokus yang tampil jelas seperti contoh.</small>
-              </span>
-              <input
-                type="checkbox"
-                checked={blurBackground}
-                onChange={(event) => setBlurBackground(event.target.checked)}
-              />
-              <i aria-hidden="true"></i>
-            </label>
-            <label className={styles.switchLine}>
-              <span>
-                <strong>Menu tahan pesan</strong>
-                <small>Reaction dan pilihan aksi di preview.</small>
-              </span>
-              <input
-                type="checkbox"
-                checked={menuOpen}
-                onChange={(event) => setMenuOpen(event.target.checked)}
-              />
-              <i aria-hidden="true"></i>
-            </label>
           </section>
 
           <button type="button" className={styles.generateButton} onClick={generatePreview}>
